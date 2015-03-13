@@ -1,0 +1,57 @@
+[{
+    "t": 0,
+    "id": 58833,
+    "location": {
+        "x": 1.09,
+        "y": 2.17
+    },
+    "icon": "StartNodeBackgroundStrDexInt.png"
+}, {
+    "t": 1,
+    "id": 47175,
+    "location": {
+        "x": -879.89,
+        "y": 506.68
+    },
+    "icon": "StartNodeBackgroundStr.png"
+}, {
+    "t": 6,
+    "id": 44683,
+    "location": {
+        "x": 875.66,
+        "y": -506.56
+    },
+    "icon": "StartNodeBackgroundDexInt.png"
+}, {
+    "t": 4,
+    "id": 50986,
+    "location": {
+        "x": -1.64,
+        "y": 1019.34
+    },
+    "icon": "StartNodeBackgroundStrDex.png"
+}, {
+    "t": 5,
+    "id": 61525,
+    "location": {
+        "x": -881.17,
+        "y": -503.14
+    },
+    "icon": "StartNodeBackgroundStrInt.png"
+}, {
+    "t": 2,
+    "id": 50459,
+    "location": {
+        "x": 883.56,
+        "y": 516.17
+    },
+    "icon": "StartNodeBackgroundDex.png"
+}, {
+    "t": 3,
+    "id": 54447,
+    "location": {
+        "x": -0.71,
+        "y": -1011.56
+    },
+    "icon": "StartNodeBackgroundInt.png"
+}]
