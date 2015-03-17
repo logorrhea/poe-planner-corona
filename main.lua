@@ -29,10 +29,18 @@ node_widths = { 27, 38, 53 }
 
 camera:track()
 
--- Read JSON data from file
+-- Read node data from file
 local path = system.pathForFile("combined_node_data.json", system.ResourceDirectory)
 local file = io.open(path, "r")
 local nodes = json.decode(file:read("*a"))
+io.close()
+
+-- Read line data from file
+local path = system.pathForFile("line_data_formatted.json", system.ResourceDirectory)
+local file = io.open(path, "r")
+local lines = json.decode(file:read("*a"))
+io.close()
+
 
 -- Draw all the nodes
 function drawNode(node)
@@ -57,6 +65,47 @@ function drawNode(node)
    camera:add(circ, 1)
 end
 
+-- Draw straight lines
+function drawStraightLine(line)
+    local line = display.newLine(line.start_x, line.start_y, line.end_x, line.end_y)
+    line:setStrokeColor(1, 0, 0, 1)
+    line.strokeWidth = 5
+    camera:add(line, 1)
+end
+
+-- @TODO
+function drawArcLine(line)
+    local arc = display.newGroup()
+
+    local steps = 20
+    local start = tonumber(line.start)
+    local delta = - tonumber(line.delta)
+    local radius = tonumber(line.radius)
+    local stepSize = delta/steps
+
+    -- This is the center point of the arc
+    local x, y = tonumber(line.x), tonumber(line.y)
+
+    local x0, y0, x1, y1 = nil
+    for i = 0,steps do
+        local radians = start - stepSize * i;
+        if x0 == nil then
+            x0, y0 = radius*math.cos(radians), radius*math.sin(radians)
+        else
+            x1, y1 = radius*math.cos(radians), radius*math.sin(radians)
+            local line = display.newLine(x0+x, y0+y, x1+x, y1+y)
+            line:append(points)
+            line:setStrokeColor(1, 0, 0, 1)
+            line.strokeWidth = 5
+            arc:insert(line)
+            x0, y0 = x1, y1
+        end
+    end
+
+    camera:add(arc, 1)
+end
+
+-- Camera panning
 function dragListener(e)
    if(e.phase == "began") then
 	  lastX = e.xStart
@@ -86,9 +135,15 @@ function keyboardListener(e)
    end
 end
 
-for _, node in ipairs(nodes) do
-   drawNode(node)
+-- Draw lines first so they end up on top
+for i, line in ipairs(lines) do
+    if line.type == "0" then drawStraightLine(line) else drawArcLine(line) end
 end
+
+for _, node in ipairs(nodes) do
+    drawNode(node)
+end
+
 
 local lastX = nil
 local lastY = nil
