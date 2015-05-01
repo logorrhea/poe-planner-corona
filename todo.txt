@@ -1,0 +1,13 @@
+make graph.lua use the scene architecture properly
+    - or -
+hook back button up the camera (?) and make it function properly
+
+get download.lua to actually download the necessary files
+
+after downloading files, send user back to main menu
+
+rework skill tree to build from the new JSON file structure that comes from
+the POE website, rather than the hackneyed one that I put together (much of
+this could probably be gleaned from the POESkillTree app code)
+
+
