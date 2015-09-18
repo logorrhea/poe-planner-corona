@@ -1,9 +1,59 @@
 -- Corona libs
 local composer = require("composer")
 local widget = require("widget")
+local network = require("network")
 
 -- Locals
 local scene = composer.newScene()
+local TreeAddress = "http://www.pathofexile.com/passive-skill-tree/"
+
+-- Function to listen to network events and display progress updates
+function NetworkListener(event)
+    if (event.isError) then
+    elseif (event.phase == "began") then
+        if (event.bytesEstimated <= 0) then
+            print("Download starting, size unknown")
+        else
+            print("Download starting, estimated size: " .. event.bytesEstimated)
+        end
+    elseif (event.phase == "progress") then
+        if (event.bytesEstimated <= 0) then
+            print("Download progress: "..event.bytesTransferred)
+        else
+            print("Download progress: "..event.bytesTransferred.." of estimated "..event.bytesEstimated)
+        end
+    elseif (event.phase == "ended") then
+        print("Download complete, total bytes transferred: " .. event.bytesTransferred)
+
+        -- Read saved data from file
+        local htmlHandle = io.open(
+            system.pathForFile("treeData.html", system.DocumentsDirectory), "r")
+        local html = htmlHandle:read("*all")
+        io.close(htmlHandle)
+
+        -- Grab JSON data from html file
+        local pattern = "var passiveSkillTreeData = "
+        local match = html:match(pattern..".-\n")
+        local json = match:sub(#pattern, #match - 2)
+
+        -- Write JSON to file
+        local jsonHandle = io.open(system.pathForFile("treeData.json", system.DocumentsDirectory), "w")
+        jsonHandle:write(json)
+        io.close(jsonHandle)
+
+    end
+end
+
+-- Function to download a file and return the contents as a string
+function GET(url)
+    local params = {}
+    params.progress = "download"
+    params.response = {
+        filename = "treeData.html",
+        baseDirectory = system.DocumentsDirectory
+    }
+    network.request(url, "GET", NetworkListener, params)
+end
 
 -- Event handler for the back button
 local function backToMenu(event)
@@ -14,7 +64,6 @@ end
 
 function scene:create(event)
     local sceneGroup = self.view
-
 
     -- Create background
     local bg = display.newRect(0, 0, display.contentWidth, display.contentHeight)
@@ -90,6 +139,10 @@ scene:addEventListener("create", scene)
 scene:addEventListener("show",   scene)
 scene:addEventListener("hide",   scene)
 scene:addEventListener("destroy",scene)
+
+
+-- Make http request
+GET(TreeAddress)
 
 return scene
 
