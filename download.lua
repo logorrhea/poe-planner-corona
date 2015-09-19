@@ -2,10 +2,13 @@
 local composer = require("composer")
 local widget = require("widget")
 local network = require("network")
+local SkillTree = require("skillTree")
+local json = require("json")
 
 -- Locals
 local scene = composer.newScene()
 local TreeAddress = "http://www.pathofexile.com/passive-skill-tree/"
+
 
 -- Function to listen to network events and display progress updates
 function NetworkListener(event)
@@ -24,23 +27,7 @@ function NetworkListener(event)
         end
     elseif (event.phase == "ended") then
         print("Download complete, total bytes transferred: " .. event.bytesTransferred)
-
-        -- Read saved data from file
-        local htmlHandle = io.open(
-            system.pathForFile("treeData.html", system.DocumentsDirectory), "r")
-        local html = htmlHandle:read("*all")
-        io.close(htmlHandle)
-
-        -- Grab JSON data from html file
-        local pattern = "var passiveSkillTreeData = "
-        local match = html:match(pattern..".-\n")
-        local json = match:sub(#pattern, #match - 2)
-
-        -- Write JSON to file
-        local jsonHandle = io.open(system.pathForFile("treeData.json", system.DocumentsDirectory), "w")
-        jsonHandle:write(json)
-        io.close(jsonHandle)
-
+        ConstructSkillTree()
     end
 end
 
@@ -53,6 +40,28 @@ function GET(url)
         baseDirectory = system.DocumentsDirectory
     }
     network.request(url, "GET", NetworkListener, params)
+end
+
+function ConstructSkillTree()
+    -- Read saved data from file
+    local htmlHandle = io.open(
+        system.pathForFile("treeData.html", system.DocumentsDirectory), "r")
+    local html = htmlHandle:read("*all")
+    io.close(htmlHandle)
+
+    -- Grab JSON data from html file
+    local pattern = "var passiveSkillTreeData = "
+    local match = html:match(pattern..".-\n")
+    local jsonString = match:sub(#pattern, #match - 2)
+
+    -- Parse JSON data into SkillTree
+    local tree = SkillTree.BuildFromData(jsonString)
+
+    -- Write serialized tree to file
+    jsonString = json.encode(tree)
+    local jsonHandle = io.open(system.pathForFile("skillTree.json", system.DocumentsDirectory), "w")
+    jsonHandle:write(jsonString)
+    io.close(jsonHandle)
 end
 
 -- Event handler for the back button
