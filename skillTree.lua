@@ -5,13 +5,10 @@ local json = require("json")
 
 -- Creates the organized tree from JSON data downloaded from pathofexile.com
 function skillTree.BuildFromData(dataString)
-    -- Load data from file
-    --local path = system.pathForFile(filename, system.ResourceDirectory)
-    --local file = io.open(path, "r")
-    --local data = json.decode(file:read("*all"))
+    -- Parse json data string
     local data = json.decode(dataString)
 
-    -- Parse data
+    -- Create skill tree from parsed data
     local tree = {}
 
     -- Parse nodes
@@ -37,6 +34,18 @@ function skillTree.BuildFromData(dataString)
 
         -- Add to nodes
         tree.nodes[node.id] = node
+    end)
+
+    -- Parse groups
+    tree.groups = {}
+    table.foreach(data.groups, function(i, g)
+        -- Build new group
+        group = {}
+
+        -- Get attributes from json group
+        group.position = {x = g.x, y = g.y}
+        group.nodes = g.n
+        group.ocpOrb = g.oo
     end)
 
     return tree
