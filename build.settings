@@ -29,9 +29,13 @@ settings =
 	{
 		plist =
 		{
-			UIStatusBarHidden = false,
+            CFBundleDisplayName = "PoE Planner",
+            CFBundleName = "net.suchprogrammer.poe.planner",
+            UILaunchImages = {},     -- Required
+            UIApplicationExitsOnSuspend = false,
+            UIStatusBarHidden = true,
+            MinimumOSVersion = "6.0",
 			UIPrerenderedIcon = true, -- set to false for "shine" overlay
-			--UIApplicationExitsOnSuspend = true, -- uncomment to quit app on suspend
 
 			CFBundleIconFiles =
 			{
