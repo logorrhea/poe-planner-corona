@@ -28,7 +28,7 @@ function skillTree.BuildFromData(dataString)
         node.isKeyStone = n.ks
         node.isMastery = n.m
         node.isNotable = n["not"] -- n.not is reserved :(
-        node.orbit = n.o
+        node.orbit = n.o + 1 -- lua arrays are not 0-indexed
         node.orbitIndex = n.oidx
         node.links = n.out
 
@@ -46,6 +46,12 @@ function skillTree.BuildFromData(dataString)
         group.position = {x = g.x, y = g.y}
         group.nodes = g.n
         group.ocpOrb = g.oo
+        
+        for _, nid in ipairs(group.nodes) do
+            tree.nodes[nid].group = group
+        end
+
+        tree.groups[i] = group
     end)
 
     return tree
