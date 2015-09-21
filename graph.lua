@@ -18,7 +18,7 @@ local camera = perspective.createView()
 local width = display.pixelWidth
 local height = display.pixelHeight
 local tracker = display.newRect(height/2, width/2, height, width)
-tracker:setFillColor(0.5, 0.25) -- @TODO: this is debug, remove later
+tracker:setFillColor(0.5, 0.0) -- make invisible! yu're a wizerd!
 camera:setFocus(tracker)
 camera:track()
 
@@ -72,15 +72,32 @@ function touchListener(e)
 
         -- Handle panning
         if touchCount == 1 then
-            local moveX = e.x - touch.last.x
-            local moveY = e.y - touch.last.y
+            --local sx, sy = camera.xScale, camera.yScale
+            local moveX = (e.x - touch.last.x)/camera.xScale
+            local moveY = (e.y - touch.last.y)/camera.yScale
             tracker.x, tracker.y = (tracker.x - moveX), (tracker.y - moveY)
-            touch.last.x, touch.last.y = e.x, e.y
-            touches[touchId] = touch
 
         -- Handle pinch zoom
         else
+            local other = nil
+            table.foreach(touches, function(i, t)
+                if i ~= touchId then
+                    other = t
+                end
+            end)
+            local prevLength = lengthOf(touch.last, other.last)
+            local newLength = lengthOf({x = e.x, y = e.y}, other.last)
+            if prevLength > newLength then
+                -- zoom out
+                 camera:scale(0.9, 0.9)
+            elseif prevLength < newLength then
+                -- zoom in
+                 camera:scale(1.1, 1.1)
+            end
         end
+
+        touch.last.x, touch.last.y = e.x, e.y
+        touches[touchId] = touch
 
         -- Update touch coords
         return true
@@ -95,6 +112,21 @@ function touchListener(e)
     return false
 end
 Runtime:addEventListener("touch", touchListener)
+
+function keyboardListener(e)
+   if e.phase == "up" then
+	  local sx, sy = camera.xScale, camera.yScale
+	  print(sx, sy)
+	  if e.keyName == "up" then
+		 print("zoom in")
+		 camera:scale(1.1, 1.1)
+	  elseif e.keyName == "down" then
+		 print("zoom out")
+		 camera:scale(0.9, 0.9)
+	  end
+   end
+end
+Runtime:addEventListener("key", keyboardListener)
 
 function scene:create(event)
     local sg = self.view
