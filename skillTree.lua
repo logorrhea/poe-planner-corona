@@ -3,6 +3,27 @@ local skillTree = {}
 -- Corona libs
 local json = require("json")
 
+function fileExists(filename)
+    local f = io.open(system.pathForFile(filename, system.DocumentsDirectory))
+    if f ~= nil then io.close(f) return true else return false end
+end
+
+function GetImage(imageRoot, image)
+    local params = {
+        progress = "download",
+        response = {
+            filename = image,
+            baseDirectory = system.DocumentsDirectory,
+        }
+    }
+    local url = imageRoot..image
+    network.request(url, "GET", function(event)
+        if event.phase == "ended" then
+            print("Download complete")
+        end
+    end, params)
+end
+
 -- Creates the organized tree from JSON data downloaded from pathofexile.com
 function skillTree.BuildFromData(dataString)
     -- Parse json data string
@@ -10,6 +31,57 @@ function skillTree.BuildFromData(dataString)
 
     -- Create skill tree from parsed data
     local tree = {}
+
+    -- Set up skill icons
+    local imageRoot = data.imageRoot .. "/build-gen/passive-skill-sprite/"
+    sprites = {}
+    spriteSheets = {}
+    table.foreach(data.skillSprites, function(label, list)
+        -- Get the last (highest-rez) one in the list for each set
+        local last = list[#list]
+
+        -- Download the file if it doesn't exist
+        if not fileExists(last.filename) then
+            GetImage(imageRoot, last.filename)
+        end
+
+        -- Construct spriteSheet frames array, save indices in sprites table
+        local frames = {}
+        table.foreach(last.coords, function(icon, coords)
+            local idx = #frames + 1
+            frames[idx] = {
+                x = coords.x,
+                y = coords.y,
+                width = coords.w,
+                height = coords.h
+            }
+
+            local iconData = {
+                frame = idx,
+                sheet = label
+            }
+
+            -- Create empty if not exists
+            if table.indexOf(sprites[icon]) == nil then
+                sprites[icon] = {}
+            end
+            
+            -- Add coords depending on icon type
+            if label:match("Active") then
+                sprites[icon].active = iconData
+            elseif label:match("Inactive") then
+                sprites[icon].inactive = iconData
+            else
+                sprites[icon] = iconData -- mastery, no inactive state
+            end
+        end)
+        spriteSheets[label] = {
+            src = "data/images/"..last.filename,
+            frames = frames
+        }
+    end)
+    tree.sprites = sprites
+    tree.spriteSheets = spriteSheets
 
     -- Parse nodes
     tree.nodes = {}
@@ -52,14 +124,6 @@ function skillTree.BuildFromData(dataString)
         end
 
         tree.groups[i] = group
-    end)
-
-    -- Download images
-    local imageRoot = data.imageRoot .. "/build-gen/passive-skill-sprite/"
-    table.foreach(data.skillSprites, function(label, list)
-        -- @TODO: use this list to:
-        ---- download spritemaps
-        ---- associate coords and spritemap filenames with appropriate nodes
     end)
 
     return tree

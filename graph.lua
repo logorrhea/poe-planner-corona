@@ -13,6 +13,15 @@ local perspective = require("perspective")
 local SkillTree = require("skillTree")
 local tree = SkillTree.LoadFromFile("skillTree.json")
 
+-- Generate sprite sheets
+local SpriteSheets = {}
+table.foreach(tree.spriteSheets, function(name, sheet)
+    local opts = {frames = sheet.frames}
+    local path = sheet.src
+    path = path:gsub("/","\\")
+    SpriteSheets[name] = graphics.newImageSheet(path, system.ResourceDirectory, opts)
+end)
+
 -- Create view and set up camera tracker
 local camera = perspective.createView()
 local width = display.pixelWidth
@@ -114,17 +123,17 @@ end
 Runtime:addEventListener("touch", touchListener)
 
 function keyboardListener(e)
-   if e.phase == "up" then
-	  local sx, sy = camera.xScale, camera.yScale
-	  print(sx, sy)
-	  if e.keyName == "up" then
-		 print("zoom in")
-		 camera:scale(1.1, 1.1)
-	  elseif e.keyName == "down" then
-		 print("zoom out")
-		 camera:scale(0.9, 0.9)
-	  end
-   end
+    if e.phase == "up" then
+        local sx, sy = camera.xScale, camera.yScale
+        print(sx, sy)
+        if e.keyName == "up" then
+            print("zoom in")
+            camera:scale(1.1, 1.1)
+        elseif e.keyName == "down" then
+            print("zoom out")
+            camera:scale(0.9, 0.9)
+        end
+    end
 end
 Runtime:addEventListener("key", keyboardListener)
 
@@ -185,6 +194,20 @@ table.foreach(tree.nodes, function(i, node)
         r = NodeRadii.keystone
     end
 
+    -- Get texture data from tree
+    --local tree.nodes[i].textureData = tree.sprites[node.icon]
+    local textureData = tree.sprites[node.icon]
+    if textureData.active ~= nil then
+        if (textureData.active.sheet:match("keystone")) then print(textureData.active.sheet) end
+        local img = display.newImage(
+                SpriteSheets[textureData.active.sheet],
+                textureData.active.frame,
+                pos.x, pos.y)
+        camera:add(img, 1)
+    end
+
+    -- Spawn active node for now
+    --[[
     local circ = display.newCircle(pos.x, pos.y, r*0.75)
     circ.fill = off
     circ.active = false
@@ -200,7 +223,9 @@ table.foreach(tree.nodes, function(i, node)
    end
    circ:addEventListener("tap", circ)
    camera:add(circ, 1)
+   --]]
 end)
 
+camera:scale(.125, .125)
 
 return scene
