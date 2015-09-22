@@ -54,6 +54,14 @@ function skillTree.BuildFromData(dataString)
         tree.groups[i] = group
     end)
 
+    -- Download images
+    local imageRoot = data.imageRoot .. "/build-gen/passive-skill-sprite/"
+    table.foreach(data.skillSprites, function(label, list)
+        -- @TODO: use this list to:
+        ---- download spritemaps
+        ---- associate coords and spritemap filenames with appropriate nodes
+    end)
+
     return tree
 end
 
