@@ -219,7 +219,7 @@ function toggleNode(e)
     local node = tree.nodes[g.nid]
 
     -- Attach proper icon
-    local skillIcon = createSkillIcon(g, node)
+    local skillIcon = createSkillIcon(g.active, node)
     g:insert(skillIcon)
 
     -- Toggle active
