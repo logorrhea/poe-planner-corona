@@ -256,19 +256,21 @@ function toggleNode(e)
     local g = e.target
 
     -- Remove child image
-    for i=1,g.numChildren do
-        g[i]:removeSelf()
+    while g[1] ~= nil do
+        g:remove(1)
     end
 
     -- Retrieve node and texture data
     local node = tree.nodes[g.nid]
 
+    -- Toggle active
+    if g.active == "active" then g.active = "inactive" else g.active = "active" end
+
     -- Attach proper icon
     local skillIcon = createSkillIcon(g.active, node)
     g:insert(skillIcon)
-
-    -- Toggle active
-    if g.active == "active" then g.active = "inactive" else g.active = "active" end
+    local frame = createSkillFrame(g.active, node)
+    g:insert(frame)
 end
 
 -- Add items to group from back to front
