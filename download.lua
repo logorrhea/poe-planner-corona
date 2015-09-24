@@ -60,7 +60,7 @@ function ConstructSkillTree()
     -- Write serialized tree to file
     jsonString = json.encode(tree)
     local jsonHandle = io.open(system.pathForFile("skillTree.json", system.DocumentsDirectory), "w")
-    jsonHandle:write(jsonString)
+    jsonHandle:write(json.prettify(jsonString))
     io.close(jsonHandle)
 end
 

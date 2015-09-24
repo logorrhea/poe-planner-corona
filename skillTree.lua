@@ -37,13 +37,21 @@ function skillTree.BuildFromData(dataString)
     sprites = {}
     spriteSheets = {}
     table.foreach(data.skillSprites, function(label, list)
+
+        for i=1,#list do
+            if not fileExists(list[i].filename) then
+                GetImage(imageRoot, list[i].filename)
+            end
+        end
+
+        -- Download all the files!
         -- Get the last (highest-rez) one in the list for each set
         local last = list[#list]
 
         -- Download the file if it doesn't exist
-        if not fileExists(last.filename) then
-            GetImage(imageRoot, last.filename)
-        end
+        --if not fileExists(last.filename) then
+            --GetImage(imageRoot, last.filename)
+        --end
 
         -- Construct spriteSheet frames array, save indices in sprites table
         local frames = {}
@@ -62,17 +70,12 @@ function skillTree.BuildFromData(dataString)
             }
 
             -- Create empty if not exists
-            if table.indexOf(sprites[icon]) == nil then
-                sprites[icon] = {}
-            end
+            if sprites[icon] == nil then sprites[icon] = {} end
             
             -- Add coords depending on icon type
-            if label:match("Active") then
+            if label:find("Active") then
                 sprites[icon].active = iconData
-
-            -- @TODO: This doesn't seem to be working, only
-            -- active entries are showing up in the json file
-            elseif label:match("Inactive") then
+            elseif label:find("Inactive") then
                 sprites[icon].inactive = iconData
             else
                 sprites[icon] = iconData -- mastery, no inactive state
