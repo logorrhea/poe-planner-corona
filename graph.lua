@@ -207,27 +207,26 @@ function nodePosition(node)
 end
 
 function createSkillIcon(isActive, node)
+    local activeIdx = "active"
+    if isActive == false then activeIdx = "inactive" end
     local pos = nodePosition(node)
     local textureData = tree.sprites[node.icon]
-    if textureData[isActive] ~= nil then
+    if textureData[activeIdx] ~= nil then
         return display.newImage(
-                SpriteSheets[textureData[isActive].sheet],
-                textureData[isActive].frame,
+                SpriteSheets[textureData[activeIdx].sheet],
+                textureData[activeIdx].frame,
                 pos.x, pos.y, true)
     elseif textureData.sheet == "mastery" then
         return display.newImage(
             SpriteSheets[textureData.sheet],
             textureData.frame,
             pos.x, pos.y, true)
-    else
-        print(isActive, node.icon)
     end
     return nil
 end
 
-function createSkillFrame(gactive, node)
+function createSkillFrame(isActive, node)
     local pos = nodePosition(node)
-    local isActive = gactive == "active"
     local frameKey = ""
     if node.isKeystone then
         if isActive then
@@ -251,6 +250,24 @@ function createSkillFrame(gactive, node)
     return display.newImage(tree.assets[frameKey], system.ResourceDirectory, pos.x, pos.y, true)
 end
 
+function drawConnections(node)
+    for i=1,#node.links do
+        local onid = tostring(node.links[i])
+        local other = tree.nodes[onid]
+        if node.dGroup.active and other.dGroup.active then
+            drawConnection(node, other)
+        end
+    end
+end
+
+function drawConnection(node, other)
+    local p1, p2 = nodePosition(node), nodePosition(other)
+    local line = display.newLine(p1.x, p1.y, p2.x, p2.y)
+    line:setStrokeColor(1, 0, 0)
+    line.strokeWidth= 3
+    camera:add(line, PATH_LAYER)
+end
+
 -- Node click handler
 function toggleNode(e)
     local g = e.target
@@ -264,20 +281,24 @@ function toggleNode(e)
     local node = tree.nodes[g.nid]
 
     -- Toggle active
-    if g.active == "active" then g.active = "inactive" else g.active = "active" end
+    g.active = not g.active
+    --if g.active == "active" then g.active = "inactive" else g.active = "active" end
 
     -- Attach proper icon
     local skillIcon = createSkillIcon(g.active, node)
     g:insert(skillIcon)
     local frame = createSkillFrame(g.active, node)
     g:insert(frame)
+
+    -- Redraw this node's connections
+    drawConnections(node)
 end
 
--- Add items to group from back to front
+-- Draw nodes
 table.foreach(tree.nodes, function(i, node)
     local group = display.newGroup()
     group.nid = i
-    group.active = "inactive"
+    group.active = false
 
     local icon = createSkillIcon(group.active, node)
 
@@ -285,7 +306,6 @@ table.foreach(tree.nodes, function(i, node)
         group:insert(icon)
     end
 
-    local isActive = group.active == "active"
     if not node.isMastery then
         local frame = createSkillFrame(group.active, node)
         if frame ~= nil then
@@ -295,7 +315,19 @@ table.foreach(tree.nodes, function(i, node)
 
     group:addEventListener("tap", toggleNode)
     camera:add(group, 1)
+
+    -- Add display group to node information
+    node.dGroup = group
 end)
+
+-- Draw connections
+-- @TODO: This is probably SUPER inefficient, I'm guessing
+-- we're drawing the same lines multiple times
+-- Also this isn't going to work in the long run as each one
+-- has no idea whether or not the other is active
+for _, node in pairs(tree.nodes) do
+    drawConnections(node)
+end
 
 camera:scale(0.5, 0.5)
 
