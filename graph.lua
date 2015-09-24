@@ -18,7 +18,12 @@ local SpriteSheets = {}
 table.foreach(tree.spriteSheets, function(name, sheet)
     local opts = {frames = sheet.frames}
     local path = sheet.src
-    path = path:gsub("/","\\")
+
+    -- Change slashes for windows
+    if system.getInfo("platformName") == "Win" then
+        path = path:gsub("/","\\")
+    end
+
     SpriteSheets[name] = graphics.newImageSheet(path, system.ResourceDirectory, opts)
 end)
 
@@ -182,50 +187,58 @@ function nodePosition(node)
     return {x = x, y = y}
 end
 
+function createSkillIcon(isActive, node)
+    local pos = nodePosition(node)
+    local textureData = tree.sprites[node.icon]
+    if textureData[isActive] ~= nil then
+        return display.newImage(
+                SpriteSheets[textureData[isActive].sheet],
+                textureData[isActive].frame,
+                pos.x, pos.y)
+    elseif textureData.sheet == "mastery" then
+        return display.newImage(
+            SpriteSheets[textureData.sheet],
+            textureData.frame,
+            pos.x, pos.y)
+    else
+        print(isActive, node.icon)
+    end
+    return nil
+end
+
+-- Node click handler
+function toggleNode(e)
+    local g = e.target
+
+    -- Remove child image
+    for i=1,g.numChildren do
+        g[i]:removeSelf()
+    end
+
+    -- Retrieve node and texture data
+    local node = tree.nodes[g.nid]
+
+    -- Attach proper icon
+    local skillIcon = createSkillIcon(g, node)
+    g:insert(skillIcon)
+
+    -- Toggle active
+    if g.active == "active" then g.active = "inactive" else g.active = "active" end
+end
+
 
 table.foreach(tree.nodes, function(i, node)
-    local pos = nodePosition(node)
-    local r = 51 -- standard
-    if node.isNotable then
-        r = NodeRadii.notable
-    elseif node.isMastery then
-        r = NodeRadii.mastery
-    elseif node.isKeystone then
-        r = NodeRadii.keystone
+    local group = display.newGroup()
+    group.nid = i
+    group.active = "inactive"
+
+    local icon = createSkillIcon(group.active, node)
+    if icon ~= nil then
+        group:insert(icon)
     end
 
-    -- Get texture data from tree
-    --local tree.nodes[i].textureData = tree.sprites[node.icon]
-    local textureData = tree.sprites[node.icon]
-    if textureData.active ~= nil then
-        if (textureData.active.sheet:match("keystone")) then print(textureData.active.sheet) end
-        local img = display.newImage(
-                SpriteSheets[textureData.active.sheet],
-                textureData.active.frame,
-                pos.x, pos.y)
-        camera:add(img, 1)
-    end
-
-    -- Spawn active node for now
-    --[[
-    local circ = display.newCircle(pos.x, pos.y, r*0.75)
-    circ.fill = off
-    circ.active = false
-   function circ:tap(e)
-      if self.active then
-         self.active = false
-         self.fill = off
-      else
-         self.active = true
-         self.fill = on
-      end
-      return true
-   end
-   circ:addEventListener("tap", circ)
-   camera:add(circ, 1)
-   --]]
+    group:addEventListener("tap", toggleNode)
+    camera:add(group, 1)
 end)
-
-camera:scale(.125, .125)
 
 return scene

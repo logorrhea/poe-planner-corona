@@ -69,6 +69,9 @@ function skillTree.BuildFromData(dataString)
             -- Add coords depending on icon type
             if label:match("Active") then
                 sprites[icon].active = iconData
+
+            -- @TODO: This doesn't seem to be working, only
+            -- active entries are showing up in the json file
             elseif label:match("Inactive") then
                 sprites[icon].inactive = iconData
             else

@@ -151,8 +151,8 @@ scene:addEventListener("destroy",scene)
 
 
 -- Make http request
---GET(TreeAddress)
-ConstructSkillTree()
+GET(TreeAddress)
+--ConstructSkillTree()
 
 return scene
 
