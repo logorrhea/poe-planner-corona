@@ -8,18 +8,39 @@ function fileExists(filename)
     if f ~= nil then io.close(f) return true else return false end
 end
 
-function GetImage(imageRoot, image)
+function NetworkListener(event)
+    if (event.isError) then
+    elseif (event.phase == "began") then
+        if (event.bytesEstimated <= 0) then
+            print("Download starting, size unknown")
+        else
+            print("Download starting, estimated size: " .. event.bytesEstimated)
+        end
+    elseif (event.phase == "progress") then
+        if (event.bytesEstimated <= 0) then
+            print("Download progress: "..event.bytesTransferred)
+        else
+            print("Download progress: "..event.bytesTransferred.." of estimated "..event.bytesEstimated)
+        end
+    elseif (event.phase == "ended") then
+        print("Download complete, total bytes transferred: " .. event.bytesTransferred)
+    end
+end
+
+function GetImage(file, url)
     local params = {
         progress = "download",
         response = {
-            filename = image,
+            filename = file,
             baseDirectory = system.DocumentsDirectory,
         }
     }
-    local url = imageRoot..image
+    --print(file)
+    --print(url)
+    --network.request(url, "GET", NetworkListener, params)
     network.request(url, "GET", function(event)
         if event.phase == "ended" then
-            print("Download complete")
+            print("Download complete for " .. file)
         end
     end, params)
 end
@@ -32,26 +53,41 @@ function skillTree.BuildFromData(dataString)
     -- Create skill tree from parsed data
     local tree = {}
 
+    -- Download and store assets
+    tree.assets = {}
+    --GetImage("Background1.png", data.assets["Background1"]["0.3835"])
+    --tree.assets["Background1"] = "data/images/Background1.png"
+    table.foreach(data.assets, function(label, items)
+        local href = nil
+        local file = label..".png"
+
+        -- Just get the largest one
+        table.foreach(items, function(size, link)
+            href = link
+        end)
+
+        if not fileExists(file) then
+            GetImage(file, href)
+        end
+
+        tree.assets[label] = "data/images/"..file
+    end)
+
+    tree.constants = data.constants
+
     -- Set up skill icons
     local imageRoot = data.imageRoot .. "/build-gen/passive-skill-sprite/"
     sprites = {}
     spriteSheets = {}
     table.foreach(data.skillSprites, function(label, list)
 
-        for i=1,#list do
-            if not fileExists(list[i].filename) then
-                GetImage(imageRoot, list[i].filename)
-            end
-        end
-
-        -- Download all the files!
         -- Get the last (highest-rez) one in the list for each set
         local last = list[#list]
 
         -- Download the file if it doesn't exist
-        --if not fileExists(last.filename) then
-            --GetImage(imageRoot, last.filename)
-        --end
+        if not fileExists(last.filename) then
+            GetImage(imageRoot, last.filename)
+        end
 
         -- Construct spriteSheet frames array, save indices in sprites table
         local frames = {}
@@ -103,12 +139,13 @@ function skillTree.BuildFromData(dataString)
         node.gid = n.g
         node.icon = n.icon
         node.id = n.id
-        node.isKeyStone = n.ks
+        node.isKeystone = n.ks
         node.isMastery = n.m
         node.isNotable = n["not"] -- n.not is reserved :(
         node.orbit = n.o + 1 -- lua arrays are not 0-indexed
         node.orbitIndex = n.oidx
         node.links = n.out
+        node.startPositionClasses = n.spc
 
         -- Add to nodes
         tree.nodes[node.id] = node
@@ -131,6 +168,8 @@ function skillTree.BuildFromData(dataString)
 
         tree.groups[i] = group
     end)
+
+    print("done")
 
     return tree
 end

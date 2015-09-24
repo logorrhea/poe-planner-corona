@@ -1,5 +1,9 @@
 system.activate("multitouch")
 
+FRAME_LAYER = 1
+PATH_LAYER = 2
+ICON_LAYER = 3
+
 -- Corona Libraries
 local json = require("json")
 local physics = require("physics")
@@ -12,6 +16,34 @@ local perspective = require("perspective")
 -- Create new SkillTree
 local SkillTree = require("skillTree")
 local tree = SkillTree.LoadFromFile("skillTree.json")
+
+-- Create background image(s)
+local bgImage = tree.assets["Background1"]
+if system.getInfo("platformName") == "Win" then
+    bgImage = bgImage:gsub("/","\\")
+end
+local bgGroup = display.newGroup()
+local bgTileSize = 98
+local covered = {x = -2*bgTileSize, y = -2*bgTileSize}
+local screenSize = {x = display.actualContentWidth + 2*bgTileSize,
+                    y = display.actualContentHeight + 2*bgTileSize}
+while covered.x < screenSize.x do
+    covered.y = 0
+    while covered.y < screenSize.y do
+        display.newImage(bgGroup, bgImage, system.ResourceDirectory, covered.x, covered.y, true)
+        covered.y = covered.y + bgTileSize
+    end
+    covered.x = covered.x + bgTileSize
+end
+
+-- Create view and set up camera tracker
+local camera = perspective.createView()
+local width = display.pixelWidth
+local height = display.pixelHeight
+local tracker = display.newRect(height/2, width/2, height, width)
+tracker:setFillColor(0.5, 0.0) -- make invisible! yu're a wizerd!
+camera:setFocus(tracker)
+camera:track()
 
 -- Generate sprite sheets
 local SpriteSheets = {}
@@ -27,15 +59,6 @@ table.foreach(tree.spriteSheets, function(name, sheet)
     SpriteSheets[name] = graphics.newImageSheet(path, system.ResourceDirectory, opts)
 end)
 
--- Create view and set up camera tracker
-local camera = perspective.createView()
-local width = display.pixelWidth
-local height = display.pixelHeight
-local tracker = display.newRect(height/2, width/2, height, width)
-tracker:setFillColor(0.5, 0.0) -- make invisible! yu're a wizerd!
-camera:setFocus(tracker)
-camera:track()
-
 -- Some constants
 local SkillsPerOrbit = {1, 6, 12, 12, 12}
 local OrbitRadii = {0, 82, 162, 335, 493}
@@ -46,10 +69,6 @@ local NodeRadii = {
     mastery = 107,
     classStart = 200
 }
-
--- Colors (won't need this forever)
-off = { 1, 0, 0}
-on  = { 0, 1, 0 }
 
 -- Camera controls
 local touches = {}
@@ -165,7 +184,7 @@ function scene:create(event)
         x = 50,
         y = 50
     })
-    sceneGroup:insert(backButton)
+    --sg:insert(backButton)
 end
 
 function arc(node)
@@ -194,16 +213,42 @@ function createSkillIcon(isActive, node)
         return display.newImage(
                 SpriteSheets[textureData[isActive].sheet],
                 textureData[isActive].frame,
-                pos.x, pos.y)
+                pos.x, pos.y, true)
     elseif textureData.sheet == "mastery" then
         return display.newImage(
             SpriteSheets[textureData.sheet],
             textureData.frame,
-            pos.x, pos.y)
+            pos.x, pos.y, true)
     else
         print(isActive, node.icon)
     end
     return nil
+end
+
+function createSkillFrame(gactive, node)
+    local pos = nodePosition(node)
+    local isActive = gactive == "active"
+    local frameKey = ""
+    if node.isKeystone then
+        if isActive then
+            frameKey = "KeystoneFrameAllocated"
+        else
+            frameKey = "KeystoneFrameUnallocated"
+        end
+    elseif node.isNotable then
+        if isActive then
+            frameKey = "NotableFrameAllocated"
+        else
+            frameKey = "NotableFrameUnallocated"
+        end
+    else
+        if isActive then
+            frameKey = "PSSkillFrameActive"
+        else
+            frameKey = "PSSkillFrame"
+        end
+    end
+    return display.newImage(tree.assets[frameKey], system.ResourceDirectory, pos.x, pos.y, true)
 end
 
 -- Node click handler
@@ -226,19 +271,30 @@ function toggleNode(e)
     if g.active == "active" then g.active = "inactive" else g.active = "active" end
 end
 
-
+-- Add items to group from back to front
 table.foreach(tree.nodes, function(i, node)
     local group = display.newGroup()
     group.nid = i
     group.active = "inactive"
 
     local icon = createSkillIcon(group.active, node)
+
     if icon ~= nil then
         group:insert(icon)
+    end
+
+    local isActive = group.active == "active"
+    if not node.isMastery then
+        local frame = createSkillFrame(group.active, node)
+        if frame ~= nil then
+            group:insert(frame)
+        end
     end
 
     group:addEventListener("tap", toggleNode)
     camera:add(group, 1)
 end)
+
+camera:scale(0.5, 0.5)
 
 return scene
