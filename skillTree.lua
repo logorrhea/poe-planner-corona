@@ -35,9 +35,6 @@ function GetImage(file, url)
             baseDirectory = system.DocumentsDirectory,
         }
     }
-    --print(file)
-    --print(url)
-    --network.request(url, "GET", NetworkListener, params)
     network.request(url, "GET", function(event)
         if event.phase == "ended" then
             print("Download complete for " .. file)
@@ -77,7 +74,6 @@ function skillTree.BuildFromData(dataString)
 
     -- Set up skill icons
     local imageRoot = data.imageRoot .. "/build-gen/passive-skill-sprite/"
-    sprites = {}
     spriteSheets = {}
     table.foreach(data.skillSprites, function(label, list)
 
@@ -91,6 +87,7 @@ function skillTree.BuildFromData(dataString)
 
         -- Construct spriteSheet frames array, save indices in sprites table
         local frames = {}
+        local sprites = {}
         table.foreach(last.coords, function(icon, coords)
             local idx = #frames + 1
             frames[idx] = {
@@ -119,10 +116,10 @@ function skillTree.BuildFromData(dataString)
         end)
         spriteSheets[label] = {
             src = "data/images/"..last.filename,
-            frames = frames
+            frames = frames,
+            sprites = sprites,
         }
     end)
-    tree.sprites = sprites
     tree.spriteSheets = spriteSheets
 
     -- Parse nodes
@@ -146,6 +143,21 @@ function skillTree.BuildFromData(dataString)
         node.orbitIndex = n.oidx
         node.links = n.out
         node.startPositionClasses = n.spc
+
+        -- Determine sprite sheet to use
+        if node.isNotable then
+            node.activeSheet = "notableActive"
+            node.inactiveSheet = "notableInactive"
+        elseif node.isKeystone then
+            node.activeSheet = "keystoneActive"
+            node.inactiveSheet = "keystoneInactive"
+        elseif node.isMastery then
+            node.activeSheet = "mastery"
+            node.inactiveSheet = "mastery"
+        else
+            node.activeSheet = "normalActive"
+            node.inactiveSheet = "normalInactive"
+        end
 
         -- Add to nodes
         tree.nodes[node.id] = node

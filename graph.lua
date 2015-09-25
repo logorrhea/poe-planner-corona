@@ -206,19 +206,19 @@ function nodePosition(node)
     return {x = x, y = y}
 end
 
-function createSkillIcon(isActive, node)
-    local activeIdx = "active"
-    if isActive == false then activeIdx = "inactive" end
+function createSkillIcon(active, node)
+    local activeIdx = "inactive"
+    if active then activeIdx = "active" end
+    local sheet = node.inactiveSheet
+    if active then sheet = node.activeSheet end
     local pos = nodePosition(node)
-    local textureData = tree.sprites[node.icon]
+    local textureData = tree.spriteSheets[sheet].sprites[node.icon]
     if textureData[activeIdx] ~= nil then
         return display.newImage(
                 SpriteSheets[textureData[activeIdx].sheet],
                 textureData[activeIdx].frame,
                 pos.x, pos.y, true)
     elseif textureData.sheet == "mastery" then
-        return display.newImage(
-            SpriteSheets[textureData.sheet],
             textureData.frame,
             pos.x, pos.y, true)
     end
@@ -287,8 +287,10 @@ function toggleNode(e)
     -- Attach proper icon
     local skillIcon = createSkillIcon(g.active, node)
     g:insert(skillIcon)
-    local frame = createSkillFrame(g.active, node)
-    g:insert(frame)
+    if not node.isMastery then
+        local frame = createSkillFrame(g.active, node)
+        g:insert(frame)
+    end
 
     -- Redraw this node's connections
     drawConnections(node)
@@ -329,6 +331,6 @@ for _, node in pairs(tree.nodes) do
     drawConnections(node)
 end
 
-camera:scale(0.5, 0.5)
+camera:scale(0.75, 0.75)
 
 return scene
