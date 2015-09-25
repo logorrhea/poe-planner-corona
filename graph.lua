@@ -2,6 +2,9 @@ system.activate("multitouch")
 
 ACTIVE_CLASS = 0
 
+MAX_ZOOM = 2
+MIN_ZOOM = 0.25
+
 FRAME_LAYER = 1
 PATH_LAYER = 2
 ICON_LAYER = 3
@@ -95,9 +98,7 @@ function touchListener(e)
         return true
 
     elseif e.phase == "moved" then
-
-        local touch = touches[touchId]
-
+local touch = touches[touchId] 
         -- Handle panning
         if touchCount == 1 then
             --local sx, sy = camera.xScale, camera.yScale
@@ -115,12 +116,10 @@ function touchListener(e)
             end)
             local prevLength = lengthOf(touch.last, other.last)
             local newLength = lengthOf({x = e.x, y = e.y}, other.last)
-            if prevLength > newLength then
-                -- zoom out
-                 camera:scale(0.9, 0.9)
-            elseif prevLength < newLength then
-                -- zoom in
-                 camera:scale(1.1, 1.1)
+            if prevLength > newLength and camera.xScale >= MIN_ZOOM then
+                 camera:scale(0.98, 0.98)
+            elseif prevLength < newLength and camera.xScale <= MAX_ZOOM then
+                 camera:scale(1.02, 1.02)
             end
         end
 
@@ -145,10 +144,10 @@ function keyboardListener(e)
     if e.phase == "up" then
         local sx, sy = camera.xScale, camera.yScale
         --print(sx, sy)
-        if e.keyName == "up" then
+        if e.keyName == "up" and camera.xScale <= MAX_ZOOM then
             --print("zoom in")
             camera:scale(1.1, 1.1)
-        elseif e.keyName == "down" then
+        elseif e.keyName == "down" and camera.xScale >= MIN_ZOOM then
             --print("zoom out")
             camera:scale(0.9, 0.9)
         end
