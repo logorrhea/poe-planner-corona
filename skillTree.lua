@@ -72,6 +72,17 @@ function skillTree.BuildFromData(dataString)
 
     tree.constants = data.constants
 
+    -- Translate start classes
+    tree.constants.classframes = {
+        'centerscion',
+        'centermarauder',
+        'centerranger',
+        'centerwitch',
+        'centerduelist',
+        'centertemplar',
+        'centershadow',
+    }
+
     -- Set up skill icons
     local imageRoot = data.imageRoot .. "/build-gen/passive-skill-sprite/"
     spriteSheets = {}

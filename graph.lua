@@ -1,8 +1,11 @@
 system.activate("multitouch")
 
+ACTIVE_CLASS = 0
+
 FRAME_LAYER = 1
 PATH_LAYER = 2
 ICON_LAYER = 3
+CLASS_FRAME_LAYER = 4
 
 -- Corona Libraries
 local json = require("json")
@@ -12,16 +15,14 @@ local composer = require("composer")
 -- Contrib
 local scene = composer.newScene()
 local perspective = require("perspective")
+local utils = require('utils')
 
 -- Create new SkillTree
 local SkillTree = require("skillTree")
 local tree = SkillTree.LoadFromFile("skillTree.json")
 
 -- Create background image(s)
-local bgImage = tree.assets["Background1"]
-if system.getInfo("platformName") == "Win" then
-    bgImage = bgImage:gsub("/","\\")
-end
+local bgImage = utils.pathfix(tree.assets["Background1"])
 local bgGroup = display.newGroup()
 local bgTileSize = 98
 local covered = {x = -2*bgTileSize, y = -2*bgTileSize}
@@ -49,13 +50,7 @@ camera:track()
 local SpriteSheets = {}
 table.foreach(tree.spriteSheets, function(name, sheet)
     local opts = {frames = sheet.frames}
-    local path = sheet.src
-
-    -- Change slashes for windows
-    if system.getInfo("platformName") == "Win" then
-        path = path:gsub("/","\\")
-    end
-
+    local path = utils.pathfix(sheet.src)
     SpriteSheets[name] = graphics.newImageSheet(path, system.ResourceDirectory, opts)
 end)
 
@@ -149,12 +144,12 @@ Runtime:addEventListener("touch", touchListener)
 function keyboardListener(e)
     if e.phase == "up" then
         local sx, sy = camera.xScale, camera.yScale
-        print(sx, sy)
+        --print(sx, sy)
         if e.keyName == "up" then
-            print("zoom in")
+            --print("zoom in")
             camera:scale(1.1, 1.1)
         elseif e.keyName == "down" then
-            print("zoom out")
+            --print("zoom out")
             camera:scale(0.9, 0.9)
         end
     end
@@ -250,6 +245,41 @@ function createSkillFrame(isActive, node)
     return display.newImage(tree.assets[frameKey], system.ResourceDirectory, pos.x, pos.y, true)
 end
 
+function fileExists(filename)
+    local f = io.open(system.pathForFile(filename, system.ResourceDirectory))
+    if f ~= nil then io.close(f) return true else return false end
+end
+
+function createClassFrame(active, node)
+    local g = display.newGroup()
+    local pos = nodePosition(node)
+
+    -- Always the same background
+    local fancy = utils.pathfix(tree.assets['PSGroupBackground3'])
+
+    local top = display.newImage(fancy, system.ResourceDirectory, pos.x, pos.y, true)
+    top:translate(0, -top.path.height/2)
+
+    local bottom = display.newImage(fancy, system.ResourceDirectory, pos.x, pos.y, true)
+    bottom:rotate(180)
+    bottom:translate(0, bottom.path.height/2)
+
+    g:insert(bottom)
+    g:insert(top)
+
+    local spc = node.startPositionClasses[1] -- there is only ever one
+    local src
+    if spc == ACTIVE_CLASS then
+        print("class is active")
+        src = tree.assets[tree.constants.classframes[spc+1]]
+    else
+        src = tree.assets['PSStartNodeBackgroundInactive']
+    end
+    src = utils.pathfix(src)
+    g:insert(display.newImage(src, system.ResourceDirectory, pos.x, pos.y, true))
+    return g
+end
+
 function drawConnections(node)
     for i=1,#node.links do
         local onid = tostring(node.links[i])
@@ -302,23 +332,34 @@ table.foreach(tree.nodes, function(i, node)
     group.nid = i
     group.active = false
 
-    local icon = createSkillIcon(group.active, node)
+    -- We've got a starting class node, do the things!
+    if #node.startPositionClasses > 0 then
+        local classframe = createClassFrame(group.active, node)
+        group:insert(classframe)
+        camera:add(group, CLASS_FRAME_LAYER)
 
-    if icon ~= nil then
-        group:insert(icon)
-    end
+    -- Node is not a class node, carry on
+    else
+        local icon = createSkillIcon(group.active, node)
 
-    if not node.isMastery then
-        local frame = createSkillFrame(group.active, node)
-        if frame ~= nil then
-            group:insert(frame)
+        if icon ~= nil then
+            group:insert(icon)
         end
+
+        if not node.isMastery then
+            local frame = createSkillFrame(group.active, node)
+            if frame ~= nil then
+                group:insert(frame)
+            end
+
+            -- Don't need click handler on mastery nodes
+            group:addEventListener("tap", toggleNode)
+        end
+
+        camera:add(group, 1)
     end
 
-    group:addEventListener("tap", toggleNode)
-    camera:add(group, 1)
-
-    -- Add display group to node information
+    -- Add display group to node information, and add it to the panning camera
     node.dGroup = group
 end)
 
