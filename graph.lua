@@ -207,10 +207,8 @@ function nodePosition(node)
 end
 
 function createSkillIcon(active, node)
-    local activeIdx = "inactive"
-    if active then activeIdx = "active" end
-    local sheet = node.inactiveSheet
-    if active then sheet = node.activeSheet end
+    local activeIdx = active and "active" or "inactive"
+    local sheet = active and node.activeSheet or node.inactiveSheet
     local pos = nodePosition(node)
     local textureData = tree.spriteSheets[sheet].sprites[node.icon]
     if textureData[activeIdx] ~= nil then
@@ -219,6 +217,8 @@ function createSkillIcon(active, node)
                 textureData[activeIdx].frame,
                 pos.x, pos.y, true)
     elseif textureData.sheet == "mastery" then
+        return display.newImage(
+            SpriteSheets[textureData.sheet],
             textureData.frame,
             pos.x, pos.y, true)
     end
