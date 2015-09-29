@@ -141,7 +141,7 @@ end
 Runtime:addEventListener("touch", touchListener)
 
 function keyboardListener(e)
-    if e.phase == "up" then
+    if e.phase == "down" then
         local sx, sy = camera.xScale, camera.yScale
         --print(sx, sy)
         if e.keyName == "up" and camera.xScale <= MAX_ZOOM then
@@ -283,18 +283,28 @@ function drawConnections(node)
     for i=1,#node.links do
         local onid = tostring(node.links[i])
         local other = tree.nodes[onid]
-        if node.dGroup.active and other.dGroup.active then
+        --if node.dGroup.active and other.dGroup.active then
             drawConnection(node, other)
-        end
+        --end
     end
 end
 
 function drawConnection(node, other)
+    if (node.gid ~= other.gid) or (node.orbit ~= other.orbit) then
+        drawStraightConnection(node, other)
+    else
+    end
+end
+
+function drawStraightConnection(node, other)
     local p1, p2 = nodePosition(node), nodePosition(other)
     local line = display.newLine(p1.x, p1.y, p2.x, p2.y)
-    line:setStrokeColor(1, 0, 0)
+    line:setStrokeColor(0.5, 0.5, 0.5)
     line.strokeWidth= 3
     camera:add(line, PATH_LAYER)
+end
+
+function drawArcedConnection()
 end
 
 -- Node click handler
