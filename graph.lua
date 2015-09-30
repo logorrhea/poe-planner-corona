@@ -1,7 +1,6 @@
 system.activate("multitouch")
 
 ACTIVE_CLASS = 0
-
 MAX_ZOOM = 2
 MIN_ZOOM = 0.25
 
@@ -9,6 +8,9 @@ FRAME_LAYER = 1
 PATH_LAYER = 2
 ICON_LAYER = 3
 CLASS_FRAME_LAYER = 4
+
+ARC_MAX_STEPS = 30
+PATH_STROKE_WIDTH = 5
 
 -- Corona Libraries
 local json = require("json")
@@ -200,6 +202,19 @@ function nodePosition(node)
     return {x = x, y = y}
 end
 
+function nodePositionInfo(node)
+    local data = {}
+    local a = arc(node)
+    local r = OrbitRadii[node.orbit]
+    return {
+        position = {
+            x = node.group.position.x - r * math.sin(-a),
+            y = node.group.position.y - r * math.cos(-a),
+        },
+        angle = a
+    }
+end
+
 function createSkillIcon(active, node)
     local activeIdx = active and "active" or "inactive"
     local sheet = active and node.activeSheet or node.inactiveSheet
@@ -293,6 +308,7 @@ function drawConnection(node, other)
     if (node.gid ~= other.gid) or (node.orbit ~= other.orbit) then
         drawStraightConnection(node, other)
     else
+        drawArcedConnection(node, other)
     end
 end
 
@@ -300,11 +316,51 @@ function drawStraightConnection(node, other)
     local p1, p2 = nodePosition(node), nodePosition(other)
     local line = display.newLine(p1.x, p1.y, p2.x, p2.y)
     line:setStrokeColor(0.5, 0.5, 0.5)
-    line.strokeWidth= 3
+    line.strokeWidth = PATH_STROKE_WIDTH
     camera:add(line, PATH_LAYER)
 end
 
-function drawArcedConnection()
+function drawArcedConnection(node, other)
+    local s, e = nodePositionInfo(node), nodePositionInfo(other)
+
+    local startAngle, endAngle = e.angle, s.angle
+    if startAngle > endAngle then
+        startAngle, endAngle = endAngle, startAngle
+    end
+    local delta = endAngle - startAngle
+
+    if delta > math.pi then
+        local c = 2*math.pi - delta
+        endAngle = startAngle
+        startAngle = endAngle + c
+        delta = c
+    end
+
+    local center = node.group.position
+    local radius = OrbitRadii[node.orbit]
+    local steps = math.ceil(ARC_MAX_STEPS*(delta/(math.pi*2)))
+    local stepSize = delta/steps
+
+    local points = {}
+    local radians = 0
+    endAngle = endAngle - math.pi/2
+    for i=0,steps do
+        radians = endAngle - stepSize*i
+        table.insert(points, radius*math.cos(radians)+center.x)
+        table.insert(points, radius*math.sin(radians)+center.y)
+    end
+
+    local y, x = table.remove(points), table.remove(points)
+    local y2, x2 = table.remove(points), table.remove(points)
+    local line = display.newLine(x, y, x2, y2)
+    while #points ~= 0 do
+        y, x = table.remove(points), table.remove(points)
+        line:append(x, y)
+    end
+
+    line:setStrokeColor(0.5, 0.5, 0.5)
+    line.strokeWidth = PATH_STROKE_WIDTH
+    camera:add(line, PATH_LAYER)
 end
 
 -- Node click handler
@@ -318,6 +374,7 @@ function toggleNode(e)
 
     -- Retrieve node and texture data
     local node = tree.nodes[g.nid]
+    print(node.id)
 
     -- Toggle active
     g.active = not g.active
