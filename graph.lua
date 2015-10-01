@@ -1,5 +1,8 @@
 system.activate("multitouch")
 
+local root = nil
+local neighbors = {} -- use to keep track of active node neighbors
+
 ACTIVE_CLASS = 0
 MAX_ZOOM = 2
 MIN_ZOOM = 0.25
@@ -145,12 +148,9 @@ Runtime:addEventListener("touch", touchListener)
 function keyboardListener(e)
     if e.phase == "down" then
         local sx, sy = camera.xScale, camera.yScale
-        --print(sx, sy)
         if e.keyName == "up" and camera.xScale <= MAX_ZOOM then
-            --print("zoom in")
             camera:scale(1.1, 1.1)
         elseif e.keyName == "down" and camera.xScale >= MIN_ZOOM then
-            --print("zoom out")
             camera:scale(0.9, 0.9)
         end
     end
@@ -284,7 +284,7 @@ function createClassFrame(active, node)
     local spc = node.startPositionClasses[1] -- there is only ever one
     local src
     if spc == ACTIVE_CLASS then
-        print("class is active")
+        root = node
         src = tree.assets[tree.constants.classframes[spc+1]]
     else
         src = tree.assets['PSStartNodeBackgroundInactive']
@@ -363,33 +363,78 @@ function drawArcedConnection(node, other)
     camera:add(line, PATH_LAYER)
 end
 
+function addNeighbors(node)
+    for i=1,#node.links do
+        if not tree.nodes[tostring(node.links[i])].active then
+            table.insert(neighbors, node.links[i])
+        end
+    end
+end
+
+function hasActiveNeighbor(node)
+    local idx = table.indexOf(neighbors, node.id)
+    
+    -- If its in the table, remove it and add its links if they are not
+    -- already active
+    if idx ~= nil then
+        table.remove(neighbors, idx)
+        addNeighbors(node)
+        return true
+    end
+
+    -- Check links for root, active
+    for i=1,#node.links do
+        sid = tostring(node.links[i])
+        local neighbor = tree.nodes[sid]
+        if neighbor.id == root.id then
+            addNeighbors(node)
+            return true
+        elseif neighbor.dGroup.active then
+            addNeighbors(node)
+            return true
+        end
+    end
+
+    return false
+end
+
 -- Node click handler
 function toggleNode(e)
     local g = e.target
-
-    -- Remove child image
-    while g[1] ~= nil do
-        g:remove(1)
-    end
 
     -- Retrieve node and texture data
     local node = tree.nodes[g.nid]
     print(node.id)
 
-    -- Toggle active
-    g.active = not g.active
-    --if g.active == "active" then g.active = "inactive" else g.active = "active" end
 
-    -- Attach proper icon
-    local skillIcon = createSkillIcon(g.active, node)
-    g:insert(skillIcon)
-    if not node.isMastery then
-        local frame = createSkillFrame(g.active, node)
-        g:insert(frame)
+    -- If active, make sure it is not part of the critical path???
+    -- How to determine this?
+    if node.dGroup.active and hasActiveNeighbor(node) then
+
+        -- @TODO: figure out how to properly de-activate a node
+
+    -- Otherwise, make sure it has active neighbors
+    elseif hasActiveNeighbor(node) then
+        -- Remove child image
+        while g[1] ~= nil do
+            g:remove(1)
+        end
+
+        -- Toggle active
+        g.active = not g.active
+        --if g.active == "active" then g.active = "inactive" else g.active = "active" end
+
+        -- Attach proper icon
+        local skillIcon = createSkillIcon(g.active, node)
+        g:insert(skillIcon)
+        if not node.isMastery then
+            local frame = createSkillFrame(g.active, node)
+            g:insert(frame)
+        end
+
+        -- Redraw this node's connections
+        drawConnections(node)
     end
-
-    -- Redraw this node's connections
-    drawConnections(node)
 end
 
 -- Draw nodes

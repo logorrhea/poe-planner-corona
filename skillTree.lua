@@ -171,7 +171,7 @@ function skillTree.BuildFromData(dataString)
         end
 
         -- Add to nodes
-        tree.nodes[node.id] = node
+        tree.nodes[tonumber(node.id)] = node
     end)
 
     -- Parse groups
