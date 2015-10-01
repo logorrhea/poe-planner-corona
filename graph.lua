@@ -1,7 +1,9 @@
 system.activate("multitouch")
 
 local root = nil
-local neighbors = {} -- use to keep track of active node neighbors
+local firstSkilled = nil
+local available = {} -- use to keep track of active node neighbors
+local skilled = {}
 
 ACTIVE_CLASS = 0
 MAX_ZOOM = 2
@@ -363,21 +365,32 @@ function drawArcedConnection(node, other)
     camera:add(line, PATH_LAYER)
 end
 
+function updateAvailableNodes()
+    -- Clear current table
+    for k in pairs(available) do
+        available[k] = nil
+    end
+
+    for nid, node in pairs(skilled) do
+        addNeighbors(node)
+    end
+end
+
 function addNeighbors(node)
     for i=1,#node.links do
         if not tree.nodes[tostring(node.links[i])].active then
-            table.insert(neighbors, node.links[i])
+            table.insert(available, node.links[i])
         end
     end
 end
 
 function hasActiveNeighbor(node)
-    local idx = table.indexOf(neighbors, node.id)
+    local idx = table.indexOf(available, node.id)
     
     -- If its in the table, remove it and add its links if they are not
     -- already active
     if idx ~= nil then
-        table.remove(neighbors, idx)
+        table.remove(available, idx)
         addNeighbors(node)
         return true
     end
@@ -398,6 +411,79 @@ function hasActiveNeighbor(node)
     return false
 end
 
+function refund(node)
+    -- Remove node from skilled list
+    skilled[node.id] = nil
+
+    if firstSkilled.id ~= node.id then
+        -- Start with first node selected (the one closest to the root)
+        local front = {}
+        front[firstSkilled.id] = firstSkilled
+        for _, nid in pairs(firstSkilled.links) do
+            if skilled[nid] ~= nil then
+                front[nid] = skilled[nid]
+            end
+        end
+
+        -- Copy front into reachable
+        local reachable = {}
+        for nid, _node in pairs(front) do
+            reachable[nid] = _node
+        end
+
+        -- March outward from each "front" node, discovering reachable nodes
+        while #front > 0 do
+            local newfront = {}
+            for nid, _node in pairs(front) do
+                for _, lnid in pairs(skilled[nid].links) do
+                    if skilled[lnid] ~= nil and reachable[lnid] == nil then
+                        newfront[lnid] = tree.nodes[tostring(lnid)]
+                        reachable[lnid] = newfront[lnid]
+                    end
+                end
+            end
+
+            front = newfront
+        end
+    else
+        -- This isn't technically true...
+        reachable = {}
+    end
+
+    -- Deactivate unreachable nodes
+    for nid, _node in pairs(skilled) do
+        if reachable[nid] == nil then
+            print(nid .. ' is unreachable')
+            _node.dGroup.active = false
+            updateNode(_node.dGroup)
+        end
+    end
+
+    skilled = reachable
+
+    updateAvailableNodes()
+end
+
+function updateNode(dGroup)
+    local node = tree.nodes[dGroup.nid]
+
+    -- Remove child image
+    while dGroup[1] ~= nil do
+        dGroup:remove(1)
+    end
+
+    -- Attach proper icon
+    local skillIcon = createSkillIcon(dGroup.active, node)
+    dGroup:insert(skillIcon)
+    if not node.isMastery then
+        local frame = createSkillFrame(dGroup.active, node)
+        dGroup:insert(frame)
+    end
+
+    -- Redraw this node's connections
+    drawConnections(node)
+end
+
 -- Node click handler
 function toggleNode(e)
     local g = e.target
@@ -406,34 +492,19 @@ function toggleNode(e)
     local node = tree.nodes[g.nid]
     print(node.id)
 
-
-    -- If active, make sure it is not part of the critical path???
-    -- How to determine this?
-    if node.dGroup.active and hasActiveNeighbor(node) then
-
-        -- @TODO: figure out how to properly de-activate a node
+    -- Refund the node, and re-build skilled and available tables
+    if node.dGroup.active then
+        refund(node)
+        g.active = false
+        updateNode(g)
 
     -- Otherwise, make sure it has active neighbors
     elseif hasActiveNeighbor(node) then
-        -- Remove child image
-        while g[1] ~= nil do
-            g:remove(1)
-        end
-
-        -- Toggle active
-        g.active = not g.active
-        --if g.active == "active" then g.active = "inactive" else g.active = "active" end
-
-        -- Attach proper icon
-        local skillIcon = createSkillIcon(g.active, node)
-        g:insert(skillIcon)
-        if not node.isMastery then
-            local frame = createSkillFrame(g.active, node)
-            g:insert(frame)
-        end
-
-        -- Redraw this node's connections
-        drawConnections(node)
+        -- Add to list of skilled nodes
+        skilled[node.id] = node
+        if firstSkilled == nil then firstSkilled = node end
+        g.active = true
+        updateNode(g)
     end
 end
 
