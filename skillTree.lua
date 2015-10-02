@@ -152,7 +152,8 @@ function skillTree.BuildFromData(dataString)
         node.isNotable = n["not"] -- n.not is reserved :(
         node.orbit = n.o + 1 -- lua arrays are not 0-indexed
         node.orbitIndex = n.oidx
-        node.links = n.out
+        node.links = table.copy(n.out)
+        node.neighbors = table.copy(n.out)
         node.startPositionClasses = n.spc
 
         -- Determine sprite sheet to use
@@ -173,6 +174,16 @@ function skillTree.BuildFromData(dataString)
         -- Add to nodes
         tree.nodes[tonumber(node.id)] = node
     end)
+
+    -- Run through nodes a second time, so we can make links
+    -- go both directions
+    for nid, node in pairs(tree.nodes) do
+        for _, lnid in ipairs(node.links) do
+            if lnid ~= nid and table.indexOf(tree.nodes[lnid].neighbors, nid) == nil then
+                table.insert(tree.nodes[lnid].neighbors, nid)
+            end
+        end
+    end
 
     -- Parse groups
     tree.groups = {}

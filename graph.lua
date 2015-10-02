@@ -413,7 +413,7 @@ end
 
 function findReachable(from, reachable, searched)
     reachable[from.id] = from
-    for _, nid in pairs(from.links) do
+    for _, nid in pairs(from.neighbors) do
         local node = tree.nodes[tostring(nid)]
         if skilled[nid] ~= nil and reachable[nid] == nil then
             reachable[nid] = node
@@ -428,23 +428,7 @@ function refund(node)
 
     local reachable = {}
     if firstSkilled.id ~= node.id then
-
         findReachable(firstSkilled, reachable)
-
-        -- Now check discrepancies between reachable and skilled, and do it
-        -- all over again? It seems we need to do a better job of figuring out
-        -- the linkages when contructing the tree in the first place?
-        for nid, _node in pairs(skilled) do
-            if reachable[nid] == nil then
-                for _, lnid in ipairs(_node.links) do
-                    if reachable[lnid] ~= nil then
-                        reachable[lnid] = _node
-                        findReachable(_node, reachable)
-                    end
-                end
-            end
-        end
-
     end
 
     -- Deactivate unreachable nodes
@@ -456,7 +440,6 @@ function refund(node)
     end
 
     skilled = reachable
-
     updateAvailableNodes()
 end
 
