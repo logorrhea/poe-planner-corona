@@ -411,49 +411,45 @@ function hasActiveNeighbor(node)
     return false
 end
 
+function findReachable(from, reachable, searched)
+    reachable[from.id] = from
+    for _, nid in pairs(from.links) do
+        local node = tree.nodes[tostring(nid)]
+        if skilled[nid] ~= nil and reachable[nid] == nil then
+            reachable[nid] = node
+            findReachable(node, reachable)
+        end
+    end
+end
+
 function refund(node)
     -- Remove node from skilled list
     skilled[node.id] = nil
 
+    local reachable = {}
     if firstSkilled.id ~= node.id then
-        -- Start with first node selected (the one closest to the root)
-        local front = {}
-        front[firstSkilled.id] = firstSkilled
-        for _, nid in pairs(firstSkilled.links) do
-            if skilled[nid] ~= nil then
-                front[nid] = skilled[nid]
-            end
-        end
 
-        -- Copy front into reachable
-        local reachable = {}
-        for nid, _node in pairs(front) do
-            reachable[nid] = _node
-        end
+        findReachable(firstSkilled, reachable)
 
-        -- March outward from each "front" node, discovering reachable nodes
-        while #front > 0 do
-            local newfront = {}
-            for nid, _node in pairs(front) do
-                for _, lnid in pairs(skilled[nid].links) do
-                    if skilled[lnid] ~= nil and reachable[lnid] == nil then
-                        newfront[lnid] = tree.nodes[tostring(lnid)]
-                        reachable[lnid] = newfront[lnid]
+        -- Now check discrepancies between reachable and skilled, and do it
+        -- all over again? It seems we need to do a better job of figuring out
+        -- the linkages when contructing the tree in the first place?
+        for nid, _node in pairs(skilled) do
+            if reachable[nid] == nil then
+                for _, lnid in ipairs(_node.links) do
+                    if reachable[lnid] ~= nil then
+                        reachable[lnid] = _node
+                        findReachable(_node, reachable)
                     end
                 end
             end
-
-            front = newfront
         end
-    else
-        -- This isn't technically true...
-        reachable = {}
+
     end
 
     -- Deactivate unreachable nodes
     for nid, _node in pairs(skilled) do
         if reachable[nid] == nil then
-            print(nid .. ' is unreachable')
             _node.dGroup.active = false
             updateNode(_node.dGroup)
         end
