@@ -4,15 +4,17 @@ local root = nil
 local firstSkilled = nil
 local available = {} -- use to keep track of active node neighbors
 local skilled = {}
+local connections = {}
 
 ACTIVE_CLASS = 0
 MAX_ZOOM = 2
 MIN_ZOOM = 0.25
 
 FRAME_LAYER = 1
-PATH_LAYER = 2
-ICON_LAYER = 3
-CLASS_FRAME_LAYER = 4
+ICON_LAYER = 2
+CLASS_FRAME_LAYER = 3
+ACTIVE_PATH_LAYER = 4
+PATH_LAYER = 5
 
 ARC_MAX_STEPS = 30
 PATH_STROKE_WIDTH = 5
@@ -307,6 +309,9 @@ function drawConnections(node)
 end
 
 function drawConnection(node, other)
+    -- @TODO: need to keep track of connections in a table, so that
+    -- when they get redrawn we can remove the old line and replace it
+    -- with the new one
     if (node.gid ~= other.gid) or (node.orbit ~= other.orbit) then
         drawStraightConnection(node, other)
     else
@@ -317,9 +322,15 @@ end
 function drawStraightConnection(node, other)
     local p1, p2 = nodePosition(node), nodePosition(other)
     local line = display.newLine(p1.x, p1.y, p2.x, p2.y)
-    line:setStrokeColor(0.5, 0.5, 0.5)
-    line.strokeWidth = PATH_STROKE_WIDTH
-    camera:add(line, PATH_LAYER)
+    if node.dGroup.active and (other.dGroup.active or other.id == root.id) then
+        line:setStrokeColor(1.0, 1.0, 51/255)
+        line.strokeWidth = PATH_STROKE_WIDTH
+        camera:add(line, ACTIVE_PATH_LAYER)
+    else
+        line:setStrokeColor(0.5, 0.5, 0.5)
+        line.strokeWidth = PATH_STROKE_WIDTH
+        camera:add(line, PATH_LAYER)
+    end
 end
 
 function drawArcedConnection(node, other)
