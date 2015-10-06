@@ -6,6 +6,9 @@ local available = {} -- use to keep track of active node neighbors
 local skilled = {}
 local connections = {}
 
+ACTIVE_PATH_COLOR = {1.0, 1.0, 51/255}
+INACTIVE_PATH_COLOR = {0.5, 0.5, 0.5}
+
 ACTIVE_CLASS = 0
 MAX_ZOOM = 2
 MIN_ZOOM = 0.25
@@ -299,23 +302,33 @@ function createClassFrame(active, node)
 end
 
 function drawConnections(node)
-    for i=1,#node.links do
-        local onid = tostring(node.links[i])
+    for i=1,#node.neighbors do
+        local onid = tostring(node.neighbors[i])
         local other = tree.nodes[onid]
-        --if node.dGroup.active and other.dGroup.active then
-            drawConnection(node, other)
-        --end
+        drawConnection(node, other)
     end
 end
 
 function drawConnection(node, other)
-    -- @TODO: need to keep track of connections in a table, so that
-    -- when they get redrawn we can remove the old line and replace it
-    -- with the new one
+    -- Remove old line if it exists
+    if connections[node.id] ~= nil and connections[node.id][other.id] ~= nil then
+        connections[node.id][other.id]:removeSelf()
+        connections[node.id][other.id] = nil
+    end
+    if connections[other.id] ~= nil and connections[other.id][node.id] ~= nil then
+        connections[other.id][node.id]:removeSelf()
+        connections[other.id][node.id] = nil
+    end
+
+    -- Draw new line
     if (node.gid ~= other.gid) or (node.orbit ~= other.orbit) then
-        drawStraightConnection(node, other)
+        local line = drawStraightConnection(node, other)
+        if connections[node.id] == nil then connections[node.id] = {} end
+        connections[node.id][other.id] = line
     else
-        drawArcedConnection(node, other)
+        local line = drawArcedConnection(node, other)
+        if connections[node.id] == nil then connections[node.id] = {} end
+        connections[node.id][other.id] = line
     end
 end
 
@@ -323,14 +336,15 @@ function drawStraightConnection(node, other)
     local p1, p2 = nodePosition(node), nodePosition(other)
     local line = display.newLine(p1.x, p1.y, p2.x, p2.y)
     if node.dGroup.active and (other.dGroup.active or other.id == root.id) then
-        line:setStrokeColor(1.0, 1.0, 51/255)
+        line:setStrokeColor(unpack(ACTIVE_PATH_COLOR))
         line.strokeWidth = PATH_STROKE_WIDTH
         camera:add(line, ACTIVE_PATH_LAYER)
     else
-        line:setStrokeColor(0.5, 0.5, 0.5)
+        line:setStrokeColor(unpack(INACTIVE_PATH_COLOR))
         line.strokeWidth = PATH_STROKE_WIDTH
         camera:add(line, PATH_LAYER)
     end
+    return line
 end
 
 function drawArcedConnection(node, other)
@@ -371,9 +385,16 @@ function drawArcedConnection(node, other)
         line:append(x, y)
     end
 
-    line:setStrokeColor(0.5, 0.5, 0.5)
-    line.strokeWidth = PATH_STROKE_WIDTH
-    camera:add(line, PATH_LAYER)
+    if node.dGroup.active and (other.dGroup.active or other.id == root.id) then
+        line:setStrokeColor(unpack(ACTIVE_PATH_COLOR))
+        line.strokeWidth = PATH_STROKE_WIDTH
+        camera:add(line, ACTIVE_PATH_LAYER)
+    else
+        line:setStrokeColor(unpack(INACTIVE_PATH_COLOR))
+        line.strokeWidth = PATH_STROKE_WIDTH
+        camera:add(line, PATH_LAYER)
+    end
+    return line
 end
 
 function updateAvailableNodes()
