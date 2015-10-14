@@ -26,6 +26,7 @@ PATH_STROKE_WIDTH = 5
 local json = require("json")
 local physics = require("physics")
 local composer = require("composer")
+local widget = require("widget")
 
 -- Contrib
 local scene = composer.newScene()
@@ -52,15 +53,6 @@ while covered.x < screenSize.x do
     covered.x = covered.x + bgTileSize
 end
 
--- Create view and set up camera tracker
-local camera = perspective.createView()
-local width = display.pixelWidth
-local height = display.pixelHeight
-local tracker = display.newRect(height/2, width/2, height, width)
-tracker:setFillColor(0.5, 0.0) -- make invisible! yu're a wizerd!
-camera:setFocus(tracker)
-camera:track()
-
 -- Generate sprite sheets
 local SpriteSheets = {}
 table.foreach(tree.spriteSheets, function(name, sheet)
@@ -78,6 +70,44 @@ local NodeRadii = {
     notable = 70,
     mastery = 107,
     classStart = 200
+}
+
+-- Create view and set up camera tracker
+local camera = perspective.createView()
+local width = display.pixelWidth
+local height = display.pixelHeight
+local tracker = display.newRect(height/2, width/2, height, width)
+tracker:setFillColor(0.5, 0.0) -- make invisible! yu're a wizerd!
+camera:setFocus(tracker)
+camera:track()
+
+-- Set up class change button
+local classPickButton = widget.newButton
+{
+    x = 0, y = 50-10,
+    label = 'Class',
+    width = 50, height = 50,
+    shape = "roundedRect",
+    fillColor = {
+        default = {1, 0.2, 0.5, 0.7},
+        over = {1, 0.2, 0.5, 1}
+    },
+    onPress = function(e) 
+        print('Clicked class change button')
+        local opts = {'Witch', 'Scion', 'Marauder', 'Template', 'Shadow', 'Ranger', 'Duelist'}
+        local picker = widget.newPickerWheel
+        {
+            top = display.contentHeight-222,
+            columns = {
+                {
+                    align = 'center',
+                    startIndex = 1,
+                    labels = opts
+                }
+            }
+        }
+        -- Show class picker wheel
+    end
 }
 
 -- Camera controls
