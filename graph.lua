@@ -438,23 +438,27 @@ local pickerButton = widget.newButton({
     onPress = function(e)
         local values = picker:getValues()
         if ACTIVE_CLASS ~= values[1].index then
-            for _, nid in pairs(root.neighbors) do
-                local n = tree.nodes[tostring(nid)]
-                if n.dGroup.active then
-                    refund(n)
-                    n.dGroup.active = false
-                    updateNode(n.dGroup)
+            local alert = native.showAlert('Confirm', 'Are you sure you want to reset the tree and change to '..values[1].value..'?', {'No', 'Yes'}, function(e)
+                if e.index == 2 then
+                    for _, nid in pairs(root.neighbors) do
+                        local n = tree.nodes[tostring(nid)]
+                        if n.dGroup.active then
+                            refund(n)
+                            n.dGroup.active = false
+                            updateNode(n.dGroup)
+                        end
+                    end
+                    ACTIVE_CLASS = values[1].index
+                    root = roots[ACTIVE_CLASS]
+                    for _, r in pairs(roots) do
+                        updateNode(r.dGroup)
+                    end
+                    tracker.x, tracker.y = root.group.position.x, root.group.position.y
                 end
-            end
-            ACTIVE_CLASS = values[1].index
-            root = roots[ACTIVE_CLASS]
-            for _, r in pairs(roots) do
-                updateNode(r.dGroup)
-            end
-            tracker.x, tracker.y = root.group.position.x, root.group.position.y
+            end)
+            picker.isVisible = false
+            e.target.isVisible = false
         end
-        picker.isVisible = false
-        e.target.isVisible = false
     end,
     shape = 'rect',
     width = 320,
