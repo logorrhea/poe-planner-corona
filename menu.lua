@@ -42,7 +42,7 @@ function scene:create(event)
         onEvent = graphViewButton,
         emboss = false,
         shape = "roundedRect",
-        widtdh = 200,
+        width = 200,
         height = 50,
         font = native.systemFontBold,
         fontSize = 18,

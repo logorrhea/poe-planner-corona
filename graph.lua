@@ -9,7 +9,7 @@ local connections = {}
 ACTIVE_PATH_COLOR = {1.0, 1.0, 51/255}
 INACTIVE_PATH_COLOR = {0.5, 0.5, 0.5}
 
-ACTIVE_CLASS = 0
+ACTIVE_CLASS = 1
 MAX_ZOOM = 2
 MIN_ZOOM = 0.25
 
@@ -80,145 +80,6 @@ local tracker = display.newRect(height/2, width/2, height, width)
 tracker:setFillColor(0.5, 0.0) -- make invisible! yu're a wizerd!
 camera:setFocus(tracker)
 camera:track()
-
--- Set up class change button
-local classPickButton = widget.newButton
-{
-    x = 0, y = 50-10,
-    label = 'Class',
-    width = 50, height = 50,
-    shape = "roundedRect",
-    fillColor = {
-        default = {1, 0.2, 0.5, 0.7},
-        over = {1, 0.2, 0.5, 1}
-    },
-    onPress = function(e) 
-        print('Clicked class change button')
-        local opts = {'Witch', 'Scion', 'Marauder', 'Template', 'Shadow', 'Ranger', 'Duelist'}
-        local picker = widget.newPickerWheel
-        {
-            top = display.contentHeight-222,
-            columns = {
-                {
-                    align = 'center',
-                    startIndex = 1,
-                    labels = opts
-                }
-            }
-        }
-        -- Show class picker wheel
-    end
-}
-
--- Camera controls
-local touches = {}
-local touchCount = 0
-function lengthOf(a, b)
-    local w, h = b.x-a.x, b.y-a.y
-    return (w*w + h*h)^0.5
-end
-function directionVector(a, b)
-    local length = lengthOf(a, b)
-    local diffx = b.x - a.x
-    local diffy = b.y - a.y
-    return {x = diffx/length, y = diffy/length}
-end
-function touchListener(e)
-    local touchId = e.xStart..e.yStart
-    local moveSpeed = 10
-
-    if e.phase == "began" then
-        -- Store up to two touches
-        local touch = {
-            last = {
-                x = e.xStart,
-                y = e.yStart,
-            }
-        }
-        touchCount = touchCount + 1
-        touches[touchId] = touch
-        return true
-
-    elseif e.phase == "moved" then
-local touch = touches[touchId] 
-        -- Handle panning
-        if touchCount == 1 then
-            --local sx, sy = camera.xScale, camera.yScale
-            local moveX = (e.x - touch.last.x)/camera.xScale
-            local moveY = (e.y - touch.last.y)/camera.yScale
-            tracker.x, tracker.y = (tracker.x - moveX), (tracker.y - moveY)
-
-        -- Handle pinch zoom
-        else
-            local other = nil
-            table.foreach(touches, function(i, t)
-                if i ~= touchId then
-                    other = t
-                end
-            end)
-            local prevLength = lengthOf(touch.last, other.last)
-            local newLength = lengthOf({x = e.x, y = e.y}, other.last)
-            if prevLength > newLength and camera.xScale >= MIN_ZOOM then
-                 camera:scale(0.98, 0.98)
-            elseif prevLength < newLength and camera.xScale <= MAX_ZOOM then
-                 camera:scale(1.02, 1.02)
-            end
-        end
-
-        touch.last.x, touch.last.y = e.x, e.y
-        touches[touchId] = touch
-
-        -- Update touch coords
-        return true
-
-    elseif e.phase == "ended" or e.phase == "cancelled" then
-        touchCount = touchCount - 1
-        touches[touchId] = nil
-        return true
-    end
-
-    -- Pinch zoom
-    return false
-end
-Runtime:addEventListener("touch", touchListener)
-
-function keyboardListener(e)
-    if e.phase == "down" then
-        local sx, sy = camera.xScale, camera.yScale
-        if e.keyName == "up" and camera.xScale <= MAX_ZOOM then
-            camera:scale(1.1, 1.1)
-        elseif e.keyName == "down" and camera.xScale >= MIN_ZOOM then
-            camera:scale(0.9, 0.9)
-        end
-    end
-end
-Runtime:addEventListener("key", keyboardListener)
-
-function scene:create(event)
-    local sg = self.view
-
-    -- go back button
-    local backButton = widget.newButton({
-        label = "<- Back",
-        id = 1,
-        onEvent = backToMenu,
-        emboss = false,
-        shape = "roundedRect",
-        widtdh = 200,
-        height = 50,
-        font = native.systemFontBold,
-        fontSize = 18,
-        labelColor = { default = {1, 1, 1 }, over = { 0.5, 0.5, 0.5 } },
-        cornerRadius = 8,
-        labelYOffset = -6,
-        fillColor = { default={0, 0.5, 1, 1}, over = { 0.5, 0.75, 1, 1 }},
-        strokeColor = { default={0, 0, 1, 1}, over={0.333, 0.667, 1, 1}},
-        strokeWidth = 2,
-        x = 50,
-        y = 50
-    })
-    --sg:insert(backButton)
-end
 
 function arc(node)
     return 2 * math.pi * node.orbitIndex / SkillsPerOrbit[node.orbit]
@@ -439,9 +300,9 @@ function updateAvailableNodes()
 end
 
 function addNeighbors(node)
-    for i=1,#node.links do
-        if not tree.nodes[tostring(node.links[i])].active then
-            table.insert(available, node.links[i])
+    for i=1,#node.neighbors do
+        if not tree.nodes[tostring(node.neighbors[i])].active then
+            table.insert(available, node.neighbors[i])
         end
     end
 end
@@ -458,8 +319,8 @@ function hasActiveNeighbor(node)
     end
 
     -- Check links for root, active
-    for i=1,#node.links do
-        sid = tostring(node.links[i])
+    for i=1,#node.neighbors do
+        sid = tostring(node.neighbors[i])
         local neighbor = tree.nodes[sid]
         if neighbor.id == root.id then
             addNeighbors(node)
@@ -549,6 +410,178 @@ function toggleNode(e)
     end
 end
 
+
+-- Set up class change button
+local opts = {'Witch', 'Scion', 'Marauder', 'Template', 'Shadow', 'Ranger', 'Duelist'}
+local picker = widget.newPickerWheel({
+    left = display.contentWidth/2-160,
+    top = display.contentHeight/2-111,
+    columns = {
+        {
+            align = 'center',
+            startIndex = ACTIVE_CLASS,
+            labels = opts
+        }
+    }
+})
+picker.isVisible = false
+local pickerButton = widget.newButton({
+    label = 'Select',
+    onPress = function(e)
+        local values = picker:getValues()
+        if ACTIVE_CLASS ~= values[1].index then
+            for _, nid in pairs(root.neighbors) do
+                local n = tree.nodes[tostring(nid)]
+                if n.dGroup.active then
+                    refund(n)
+                    n.dGroup.active = false
+                    updateNode(n.dGroup)
+                end
+            end
+        end
+        ACTIVE_CLASS = values[1].index
+        -- @TODO: find new root node
+        tracker.x, tracker.y = root.group.position.x, root.group.position.y
+        picker.isVisible = false
+        e.target.isVisible = false
+    end,
+    shape = 'rect',
+    width = 320,
+    height = 50,
+    font = native.systemFontBold,
+    left = display.contentWidth/2-160,
+    top = display.contentHeight/2+(111),
+})
+pickerButton.isVisible = false
+local showPickerWidgetButton = widget.newButton({
+    x = 0, y = 50-10,
+    label = 'Class',
+    width = 50, height = 50,
+    shape = 'rect',
+    fillColor = {
+        default = {1, 0.2, 0.5, 0.7},
+        over = {1, 0.2, 0.5, 1}
+    },
+    onPress = function(e) 
+        picker.isVisible = true
+        pickerButton.isVisible = true
+    end
+})
+
+-- Camera controls
+local touches = {}
+local touchCount = 0
+function lengthOf(a, b)
+    local w, h = b.x-a.x, b.y-a.y
+    return (w*w + h*h)^0.5
+end
+function directionVector(a, b)
+    local length = lengthOf(a, b)
+    local diffx = b.x - a.x
+    local diffy = b.y - a.y
+    return {x = diffx/length, y = diffy/length}
+end
+function touchListener(e)
+    local touchId = e.xStart..e.yStart
+    local moveSpeed = 10
+
+    if e.phase == "began" then
+        -- Store up to two touches
+        local touch = {
+            last = {
+                x = e.xStart,
+                y = e.yStart,
+            }
+        }
+        touchCount = touchCount + 1
+        touches[touchId] = touch
+        return true
+
+    elseif e.phase == "moved" then
+        local touch = touches[touchId] 
+        if touch ~= nil then
+            -- Handle panning
+            if touchCount == 1 then
+                --local sx, sy = camera.xScale, camera.yScale
+                local moveX = (e.x - touch.last.x)/camera.xScale
+                local moveY = (e.y - touch.last.y)/camera.yScale
+                tracker.x, tracker.y = (tracker.x - moveX), (tracker.y - moveY)
+
+            -- Handle pinch zoom
+            else
+                local other = nil
+                table.foreach(touches, function(i, t)
+                    if i ~= touchId then
+                        other = t
+                    end
+                end)
+                if other ~= nil then
+                    local prevLength = lengthOf(touch.last, other.last)
+                    local newLength = lengthOf({x = e.x, y = e.y}, other.last)
+                    if prevLength > newLength and camera.xScale >= MIN_ZOOM then
+                         camera:scale(0.98, 0.98)
+                    elseif prevLength < newLength and camera.xScale <= MAX_ZOOM then
+                         camera:scale(1.02, 1.02)
+                    end
+                end
+            end
+
+            touch.last.x, touch.last.y = e.x, e.y
+            touches[touchId] = touch
+        end
+
+        -- Update touch coords
+        return true
+
+    elseif e.phase == "ended" or e.phase == "cancelled" then
+        touchCount = touchCount - 1
+        touches[touchId] = nil
+        return true
+    end
+
+    -- Pinch zoom
+    return false
+end
+Runtime:addEventListener("touch", touchListener)
+
+function keyboardListener(e)
+    if e.phase == "down" then
+        local sx, sy = camera.xScale, camera.yScale
+        if e.keyName == "up" and camera.xScale <= MAX_ZOOM then
+            camera:scale(1.1, 1.1)
+        elseif e.keyName == "down" and camera.xScale >= MIN_ZOOM then
+            camera:scale(0.9, 0.9)
+        end
+    end
+end
+Runtime:addEventListener("key", keyboardListener)
+
+function scene:create(event)
+    local sg = self.view
+
+    -- go back button
+    local backButton = widget.newButton({
+        label = "<- Back",
+        id = 1,
+        onEvent = backToMenu,
+        emboss = false,
+        shape = "roundedRect",
+        widtdh = 200,
+        height = 50,
+        font = native.systemFontBold,
+        fontSize = 18,
+        labelColor = { default = {1, 1, 1 }, over = { 0.5, 0.5, 0.5 } },
+        cornerRadius = 8,
+        labelYOffset = -6,
+        fillColor = { default={0, 0.5, 1, 1}, over = { 0.5, 0.75, 1, 1 }},
+        strokeColor = { default={0, 0, 1, 1}, over={0.333, 0.667, 1, 1}},
+        strokeWidth = 2,
+        x = 50,
+        y = 50
+    })
+    --sg:insert(backButton)
+end
+
 -- Draw nodes
 table.foreach(tree.nodes, function(i, node)
     local group = display.newGroup()
@@ -596,5 +629,7 @@ for _, node in pairs(tree.nodes) do
 end
 
 camera:scale(0.75, 0.75)
+
+tracker.x, tracker.y = root.group.position.x, root.group.position.y
 
 return scene
