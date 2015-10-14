@@ -51,13 +51,13 @@
   "constants":{
     "classframes":["centerscion","centermarauder","centerranger","centerwitch","centerduelist","centertemplar","centershadow"],
     "classes":{
-      "StrClass":1,
-      "DexClass":2,
-      "DexIntClass":6,
+      "StrClass":2,
+      "DexClass":3,
+      "DexIntClass":7,
       "IntClass":3,
-      "StrDexClass":4,
-      "StrDexIntClass":0,
-      "StrIntClass":5
+      "StrDexClass":5,
+      "StrDexIntClass":1,
+      "StrIntClass":6
     },
     "PSSCentreInnerRadius":130,
     "characterAttributes":{

@@ -5,6 +5,7 @@ local firstSkilled = nil
 local available = {} -- use to keep track of active node neighbors
 local skilled = {}
 local connections = {}
+local roots = {}
 
 ACTIVE_PATH_COLOR = {1.0, 1.0, 51/255}
 INACTIVE_PATH_COLOR = {0.5, 0.5, 0.5}
@@ -179,11 +180,13 @@ function createClassFrame(active, node)
     g:insert(bottom)
     g:insert(top)
 
-    local spc = node.startPositionClasses[1] -- there is only ever one
+    local spc = node.startPositionClasses[1]+1 -- there is only ever one
+    roots[spc] = node
+
     local src
     if spc == ACTIVE_CLASS then
         root = node
-        src = tree.assets[tree.constants.classframes[spc+1]]
+        src = tree.assets[tree.constants.classframes[spc]]
     else
         src = tree.assets['PSStartNodeBackgroundInactive']
     end
@@ -368,18 +371,23 @@ end
 
 function updateNode(dGroup)
     local node = tree.nodes[dGroup.nid]
-
+    
     -- Remove child image
     while dGroup[1] ~= nil do
         dGroup:remove(1)
     end
 
     -- Attach proper icon
-    local skillIcon = createSkillIcon(dGroup.active, node)
-    dGroup:insert(skillIcon)
-    if not node.isMastery then
-        local frame = createSkillFrame(dGroup.active, node)
-        dGroup:insert(frame)
+    if #node.startPositionClasses > 0 then
+        local classframe = createClassFrame(dGroup.active, node)
+        dGroup:insert(classframe)
+    else
+        local skillIcon = createSkillIcon(dGroup.active, node)
+        dGroup:insert(skillIcon)
+        if not node.isMastery then
+            local frame = createSkillFrame(dGroup.active, node)
+            dGroup:insert(frame)
+        end
     end
 
     -- Redraw this node's connections
@@ -412,7 +420,7 @@ end
 
 
 -- Set up class change button
-local opts = {'Witch', 'Scion', 'Marauder', 'Template', 'Shadow', 'Ranger', 'Duelist'}
+local opts = {'Scion', 'Marauder', 'Ranger', 'Witch', 'Duelist', 'Templar', 'Shadow'}
 local picker = widget.newPickerWheel({
     left = display.contentWidth/2-160,
     top = display.contentHeight/2-111,
@@ -438,10 +446,13 @@ local pickerButton = widget.newButton({
                     updateNode(n.dGroup)
                 end
             end
+            ACTIVE_CLASS = values[1].index
+            root = roots[ACTIVE_CLASS]
+            for _, r in pairs(roots) do
+                updateNode(r.dGroup)
+            end
+            tracker.x, tracker.y = root.group.position.x, root.group.position.y
         end
-        ACTIVE_CLASS = values[1].index
-        -- @TODO: find new root node
-        tracker.x, tracker.y = root.group.position.x, root.group.position.y
         picker.isVisible = false
         e.target.isVisible = false
     end,
