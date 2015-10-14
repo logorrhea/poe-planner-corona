@@ -468,10 +468,12 @@ local pickerButton = widget.newButton({
     top = display.contentHeight/2+(111),
 })
 pickerButton.isVisible = false
+local w = 50
+local h = 50
 local showPickerWidgetButton = widget.newButton({
-    x = 0, y = 50-10,
+    x = w/2, y = h/2+display.topStatusBarContentHeight,
     label = 'Class',
-    width = 50, height = 50,
+    width = w, height = h,
     shape = 'rect',
     fillColor = {
         default = {1, 0.2, 0.5, 0.7},
