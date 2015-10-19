@@ -1,7 +1,6 @@
 system.activate("multitouch")
 
 local root = nil
-local firstSkilled = nil
 local available = {} -- use to keep track of active node neighbors
 local skilled = {}
 local connections = {}
@@ -353,9 +352,7 @@ function refund(node)
     skilled[node.id] = nil
 
     local reachable = {}
-    if firstSkilled.id ~= node.id then
-        findReachable(firstSkilled, reachable)
-    end
+    findReachable(root, reachable)
 
     -- Deactivate unreachable nodes
     for nid, _node in pairs(skilled) do
@@ -412,7 +409,6 @@ function toggleNode(e)
     elseif hasActiveNeighbor(node) then
         -- Add to list of skilled nodes
         skilled[node.id] = node
-        if firstSkilled == nil then firstSkilled = node end
         g.active = true
         updateNode(g)
     end
@@ -450,6 +446,11 @@ local pickerButton = widget.newButton({
                     end
                     ACTIVE_CLASS = values[1].index
                     root = roots[ACTIVE_CLASS]
+                    updateAvailableNodes()
+                    addNeighbors(root)
+                    for _, nid in pairs(available) do
+                        print(nid)
+                    end
                     for _, r in pairs(roots) do
                         updateNode(r.dGroup)
                     end
