@@ -155,6 +155,7 @@ function skillTree.BuildFromData(dataString)
         node.links = table.copy(n.out)
         node.neighbors = table.copy(n.out)
         node.startPositionClasses = n.spc
+        node.descriptions = n.sd
 
         -- Determine sprite sheet to use
         if node.isNotable then

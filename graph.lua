@@ -27,11 +27,13 @@ local json = require("json")
 local physics = require("physics")
 local composer = require("composer")
 local widget = require("widget")
+local timer = require("timer")
 
 -- Contrib
 local scene = composer.newScene()
 local perspective = require("perspective")
 local utils = require('utils')
+local toast = require('toast')
 
 -- Create new SkillTree
 local SkillTree = require("skillTree")
@@ -391,6 +393,11 @@ function updateNode(dGroup)
     drawConnections(node)
 end
 
+-- Shows a brief popup displaying information about the selected node
+function descriptionToast(node)
+    toast.new(display.contentCenterX, display.contentCenterY, node.name)
+end
+
 -- Node click handler
 function toggleNode(e)
     local g = e.target
@@ -411,6 +418,7 @@ function toggleNode(e)
         skilled[node.id] = node
         g.active = true
         updateNode(g)
+        descriptionToast(node)
     end
 end
 
