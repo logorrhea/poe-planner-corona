@@ -27,16 +27,13 @@ toast.new = function(x, y, text, decay)
 
     toast.background = display.newRoundedRect( toast, x, y, toast.text.width + 24, toast.text.height + 24, 16 );
     toast.background.strokeWidth = 4
-    toast.background:setFillColor(72, 64, 72)
+    toast.background:setFillColor(.3, .3, .3)
     toast.background:setStrokeColor(96, 88, 96)
 
     toast.anchorX = toast.width/2
     toast.anchorY = toast.height/2
 
     toast.text:toFront()
-
-    toast.alpha = 0
-    toast.transition = transition.to(toast, {time=decay, alpha=1})
 
     timer.performWithDelay(decay, function() destroy(toast, decay) end)
     return toast
