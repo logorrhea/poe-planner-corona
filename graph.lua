@@ -34,6 +34,7 @@ local scene = composer.newScene()
 local perspective = require("perspective")
 local utils = require('utils')
 local toast = require('toast')
+local ptoast = require('plugin.toast')
 
 -- Create new SkillTree
 local SkillTree = require("skillTree")
@@ -395,7 +396,8 @@ end
 
 -- Shows a brief popup displaying information about the selected node
 function descriptionToast(node)
-    toast.new(display.contentCenterX, display.contentCenterY, node.name)
+    toast.new(display.contentCenterX, display.contentCenterY, node)
+    ptoast.show('Testing toast plugin', {duration = 'long', gravity = 'TopCenter', offset = {0, 128}})
 end
 
 -- Node click handler

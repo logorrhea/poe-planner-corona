@@ -22,6 +22,10 @@ settings =
 		android = { "Icon.png", "Icon-Small-*.png", "Icon*@2x.png", },
 	},
 
+    plugins = {
+        ['plugin.toast'] = { publisherId = 'com.spiralcodestudio'}
+    },
+
 	--
 	-- iOS Section
 	--
