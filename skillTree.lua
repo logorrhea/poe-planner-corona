@@ -115,7 +115,7 @@ function skillTree.BuildFromData(dataString)
 
             -- Create empty if not exists
             if sprites[icon] == nil then sprites[icon] = {} end
-            
+
             -- Add coords depending on icon type
             if label:find("Active") then
                 sprites[icon].active = iconData
@@ -196,7 +196,7 @@ function skillTree.BuildFromData(dataString)
         group.position = {x = g.x, y = g.y}
         group.nodes = g.n
         group.ocpOrb = g.oo
-        
+
         for _, nid in ipairs(group.nodes) do
             tree.nodes[nid].group = group
         end

@@ -99,7 +99,7 @@ function nodePosition(node)
         x = node.group.position.x - r * math.sin(-a)
         y = node.group.position.y - r * math.cos(-a)
     end
-    
+
     return {x = x, y = y}
 end
 
@@ -138,6 +138,7 @@ end
 function createSkillFrame(isActive, node)
     local pos = nodePosition(node)
     local frameKey = ""
+
     if node.isKeystone then
         if isActive then
             frameKey = "KeystoneFrameAllocated"
@@ -150,6 +151,12 @@ function createSkillFrame(isActive, node)
         else
             frameKey = "NotableFrameUnallocated"
         end
+    elseif node.name == "Jewel Socket" then
+      if isActive then
+        frameKey = "JewelFrameAllocated"
+      else
+        frameKey = "JewelFrameUnallocated"
+      end
     else
         if isActive then
             frameKey = "PSSkillFrameActive"
@@ -314,7 +321,7 @@ end
 
 function hasActiveNeighbor(node)
     local idx = table.indexOf(available, node.id)
-    
+
     -- If its in the table, remove it and add its links if they are not
     -- already active
     if idx ~= nil then
@@ -371,7 +378,7 @@ end
 
 function updateNode(dGroup)
     local node = tree.nodes[dGroup.nid]
-    
+
     -- Remove child image
     while dGroup[1] ~= nil do
         dGroup:remove(1)
@@ -583,6 +590,7 @@ function keyboardListener(e)
     end
 end
 Runtime:addEventListener("key", keyboardListener)
+
 
 function scene:create(event)
     local sg = self.view
