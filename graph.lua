@@ -516,9 +516,23 @@ function directionVector(a, b)
     local diffy = b.y - a.y
     return {x = diffx/length, y = diffy/length}
 end
+
+local held = nil
+local function holdListener(event)
+  if held ~= nil then
+    local node = tree.nodes[held.nid]
+    if node ~= nil then
+      descriptionToast(node)
+    end
+  end
+end
+
+local holdTimer
 function touchListener(e)
     local touchId = e.xStart..e.yStart
     local moveSpeed = 10
+    print(e.phase)
+    print(e.target)
 
     if e.phase == "began" then
         -- Store up to two touches
@@ -530,9 +544,20 @@ function touchListener(e)
         }
         touchCount = touchCount + 1
         touches[touchId] = touch
+
+        -- Start longpress event if target is a node
+        if e.target ~= nil then
+          held = e.target
+          holdTimer = timer.performWithDelay(500, holdListener)
+        end
+
         return true
 
     elseif e.phase == "moved" then
+      if holdTimer ~= nil then
+        timer.cancel(holdTimer)
+        held = nil
+      end
         local touch = touches[touchId] 
         if touch ~= nil then
             -- Handle panning
@@ -569,6 +594,10 @@ function touchListener(e)
         return true
 
     elseif e.phase == "ended" or e.phase == "cancelled" then
+      if holdTimer ~= nil then
+        timer.cancel(holdTimer)
+        held = nil
+      end
         touchCount = touchCount - 1
         touches[touchId] = nil
         return true
@@ -646,6 +675,7 @@ table.foreach(tree.nodes, function(i, node)
 
             -- Don't need click handler on mastery nodes
             group:addEventListener("tap", toggleNode)
+            group:addEventListener("touch", touchListener)
         end
 
         camera:add(group, 1)
